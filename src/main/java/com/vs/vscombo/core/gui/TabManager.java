@@ -29,7 +29,7 @@ public class TabManager {
         this.contentX = x + 120;
         this.contentY = y + 25;
         this.contentW = w - 130;
-        this.contentH = h - 35;
+        this.contentH = h - 60 - 30;
         if (activeTab != null) activeTab.init(parent, contentX, contentY, contentW, contentH);
     }
 
@@ -40,8 +40,8 @@ public class TabManager {
             activeTab = tab;
             activeTab.onShow();
             activeTab.init(parent, contentX, contentY, contentW, contentH);
-            // VS Core: Re-register buttons for new tab
-            parent.reinitTabButtons(activeTab, contentX, contentY, contentW, contentH);
+            // FIX: Reinit buttons through parent
+            parent.reinitTabButtons();
         }
     }
     
