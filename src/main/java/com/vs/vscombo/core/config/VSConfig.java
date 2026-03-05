@@ -12,14 +12,11 @@ public class VSConfig {
     static {
         BUILDER.push("interface");
         MAIN_WINDOW_KEY = BUILDER
-                .comment("Default key to open VS Universe (Virtual Key Code)")
+                .comment("Default key to open VS Universe")
                 .define("mainWindowKey", "X");
         BUILDER.pop();
-        
         SPEC = BUILDER.build();
     }
     
-    public static void load() {
-        // Config loading logic handled by Forge auto-sync
-    }
+    public static void load() {}
 }
