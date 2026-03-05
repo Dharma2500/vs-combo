@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
@@ -23,7 +24,7 @@ public class VSMainWindow extends Screen {
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     private static final int SIDEBAR_WIDTH = 120;
-    private static final int EXECUTE_BUTTON_HEIGHT = 30;
+    private static final int BOTTOM_SECTION_HEIGHT = 60;
     
     private TabManager tabManager;
     private int panelX, panelY, panelW, panelH;
@@ -31,6 +32,11 @@ public class VSMainWindow extends Screen {
     private static boolean suppressNextChar = false;
     
     private final List<Button> tabButtons = new ArrayList<>();
+    private TextFieldWidget delayField;
+    private TextFieldWidget timerField;
+    
+    public static int lineDelay = 50;
+    public static int executionTimer = 0;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -60,45 +66,88 @@ public class VSMainWindow extends Screen {
         contentX = panelX + SIDEBAR_WIDTH;
         contentY = panelY + 25;
         contentW = panelW - SIDEBAR_WIDTH - 10;
-        contentH = panelH - 60 - EXECUTE_BUTTON_HEIGHT;
+        contentH = panelH - 60 - BOTTOM_SECTION_HEIGHT;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
-        // FIX: All 5 sidebar buttons
         int buttonY = panelY + 25;
         int buttonSpacing = 25;
         
-        this.addButton(new Button(
-            panelX + 5, buttonY, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#1"),
-            btn -> tabManager.switchTab("macros1")
-        ));
+        this.addButton(new Button(panelX + 5, buttonY, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#1"), btn -> tabManager.switchTab("macros1")));
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#2"), btn -> tabManager.switchTab("macros2")));
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 2, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#3"), btn -> tabManager.switchTab("macros3")));
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 3, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#4"), btn -> tabManager.switchTab("macros4")));
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 4, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#5"), btn -> tabManager.switchTab("macros5")));
         
-        this.addButton(new Button(
-            panelX + 5, buttonY + buttonSpacing, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#2"),
-            btn -> tabManager.switchTab("macros2")
-        ));
-        
-        this.addButton(new Button(
-            panelX + 5, buttonY + buttonSpacing * 2, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#3"),
-            btn -> tabManager.switchTab("macros3")
-        ));
-        
-        this.addButton(new Button(
-            panelX + 5, buttonY + buttonSpacing * 3, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#4"),
-            btn -> tabManager.switchTab("macros4")
-        ));
-        
-        this.addButton(new Button(
-            panelX + 5, buttonY + buttonSpacing * 4, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#5"),
-            btn -> tabManager.switchTab("macros5")
-        ));
-        
+        initBottomSection();
         initTabButtons();
+    }
+    
+    private void initBottomSection() {
+        int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
+        
+        // Delay label
+        this.font.drawString(new MatrixStack(), "Delay (ms):", 
+            (float)(contentX + 5), (float)(bottomY + 5), 0xFFAAAAAA);
+        
+        // Delay input field
+        delayField = new TextFieldWidget(this.font, contentX + 70, bottomY, 60, 18,
+            new StringTextComponent("Delay"));
+        delayField.setText(String.valueOf(lineDelay));
+        delayField.setTextColor(0xFFFFFF);
+        delayField.setResponder(this::onDelayChanged);
+        this.addChild(delayField);
+        
+        // Timer label
+        this.font.drawString(new MatrixStack(), "Timer (sec):", 
+            (float)(contentX + 145), (float)(bottomY + 5), 0xFFAAAAAA);
+        
+        // Timer input field
+        timerField = new TextFieldWidget(this.font, contentX + 225, bottomY, 60, 18,
+            new StringTextComponent("Timer"));
+        timerField.setText(String.valueOf(executionTimer));
+        timerField.setTextColor(0xFFFFFF);
+        timerField.setResponder(this::onTimerChanged);
+        this.addChild(timerField);
+        
+        // Execute button in bottom section
+        this.addButton(new Button(
+            panelX + panelW - 95, bottomY,
+            80, 20,
+            new StringTextComponent("Execute"),
+            btn -> executeActiveTab()
+        ));
+    }
+    
+    private void onDelayChanged(String value) {
+        try {
+            lineDelay = Integer.parseInt(value);
+            if (lineDelay < 0) lineDelay = 0;
+            if (lineDelay > 5000) lineDelay = 5000;
+        } catch (NumberFormatException e) {
+            lineDelay = 50;
+        }
+    }
+    
+    private void onTimerChanged(String value) {
+        try {
+            executionTimer = Integer.parseInt(value);
+            if (executionTimer < 0) executionTimer = 0;
+            if (executionTimer > 3600) executionTimer = 3600;
+        } catch (NumberFormatException e) {
+            executionTimer = 0;
+        }
+    }
+    
+    private void executeActiveTab() {
+        if (this.tabManager.getActiveTab() instanceof MacrosTab) {
+            ((MacrosTab) this.tabManager.getActiveTab()).executeWithSettings();
+        }
     }
     
     private void initTabButtons() {
@@ -107,15 +156,6 @@ public class VSMainWindow extends Screen {
             this.buttons.remove(btn);
         }
         tabButtons.clear();
-        
-        if (this.tabManager.getActiveTab() != null) {
-            List<Button> newButtons = this.tabManager.getActiveTab().getButtons(
-                    contentX, contentY + contentH, contentW, EXECUTE_BUTTON_HEIGHT);
-            for (Button btn : newButtons) {
-                this.addButton(btn);
-                tabButtons.add(btn);
-            }
-        }
     }
 
     @Override
@@ -129,8 +169,9 @@ public class VSMainWindow extends Screen {
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        int separatorY = panelY + panelH - EXECUTE_BUTTON_HEIGHT - 5;
-        AbstractGui.fill(matrixStack, panelX, separatorY, panelX + panelW, separatorY + 1, 0xFF555555);
+        // Bottom section separator
+        int bottomSectionY = panelY + panelH - BOTTOM_SECTION_HEIGHT;
+        AbstractGui.fill(matrixStack, panelX, bottomSectionY, panelX + panelW, bottomSectionY + 1, 0xFF555555);
         
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
@@ -139,6 +180,10 @@ public class VSMainWindow extends Screen {
             this.tabManager.getActiveTab().render(matrixStack, mouseX, mouseY, partialTicks, 
                     contentX, contentY, contentW, contentH);
         }
+        
+        // Render input fields
+        if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
+        if (timerField != null) timerField.render(matrixStack, mouseX, mouseY, partialTicks);
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
     }
@@ -149,6 +194,14 @@ public class VSMainWindow extends Screen {
             suppressNextChar = false;
             return true;
         }
+        
+        if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        if (timerField != null && timerField.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        
         if (this.tabManager.getActiveTab() != null) {
             if (this.tabManager.getActiveTab().keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
@@ -163,6 +216,14 @@ public class VSMainWindow extends Screen {
             suppressNextChar = false;
             return true;
         }
+        
+        if (delayField != null && delayField.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        if (timerField != null && timerField.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        
         if (this.tabManager.getActiveTab() != null) {
             if (this.tabManager.getActiveTab().charTyped(codePoint, modifiers)) {
                 return true;
@@ -173,6 +234,13 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (timerField != null && timerField.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        
         if (this.tabManager.getActiveTab() != null) {
             if (this.tabManager.getActiveTab().mouseClicked(mouseX, mouseY, button, 
                     contentX, contentY, contentW, contentH)) {
