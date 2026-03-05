@@ -89,7 +89,6 @@ public class MacrosTab implements IVSTab {
         }
     }
 
-    // FIX: обработка клика мыши для позиционирования курсора
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentW, int contentH) {
         if (mouseX < contentX || mouseX >= contentX + contentW || 
@@ -99,14 +98,12 @@ public class MacrosTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
-        int charWidth = 6; // approximate
+        int charWidth = 6;
         
-        // Вычисляем линию
         int clickedLine = scrollY + (int)((mouseY - contentY) / lineHeight);
         if (clickedLine < 0) clickedLine = 0;
         if (clickedLine >= lines.size()) clickedLine = lines.size() - 1;
         
-        // Вычисляем колонку
         String line = lines.get(clickedLine);
         int clickedCol = scrollX + (int)((mouseX - contentX - 2) / charWidth);
         if (clickedCol < 0) clickedCol = 0;
@@ -194,16 +191,23 @@ public class MacrosTab implements IVSTab {
 
     private void executeCommands() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null) return;
+        if (mc.player == null || mc.getConnection() == null) {
+            VSBaseMod.LOGGER.warn("Cannot execute commands: player or connection is null");
+            return;
+        }
         for (String line : lines) {
-            String cmd = line.trim();
-            if (!cmd.isEmpty() && cmd.startsWith("/")) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) {
+                String cmd = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
                 mc.player.sendChatMessage(cmd);
+                try { Thread.sleep(50); } catch (InterruptedException e) {}
             }
         }
+        VSBaseMod.LOGGER.info("Executed {} commands from Macros#1", lines.size());
     }
     
     private void saveContent() { VSFileUtil.saveString(saveFile, String.join("\n", lines)); }
+    
     private void loadContent() {
         String data = VSFileUtil.loadString(saveFile);
         if (data != null) {
@@ -214,6 +218,7 @@ public class MacrosTab implements IVSTab {
     }
     
     private void copySelection() { if (cursorLine < lines.size()) clipboard = lines.get(cursorLine); }
+    
     private void pasteClipboard() {
         if (!clipboard.isEmpty()) {
             String line = lines.get(cursorLine);
@@ -221,6 +226,7 @@ public class MacrosTab implements IVSTab {
             cursorCol += clipboard.length();
         }
     }
+    
     private void cutSelection() { copySelection(); }
 
     @Override public void onShow() {}
