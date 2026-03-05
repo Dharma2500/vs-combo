@@ -5,7 +5,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class VSFileUtil {
-    
     public static void saveString(File file, String content) {
         try {
             if (file.getParentFile() != null) file.getParentFile().mkdirs();
