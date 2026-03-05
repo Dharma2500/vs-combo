@@ -38,10 +38,14 @@ public class VSMainWindow extends Screen {
     private TextFieldWidget loopField;
     private Button stopButton;
     private Button executeButton;
-    private Button clearButton; // FIX: Кнопка Clear
+    private Button clearButton;
     
     private int currentDelay = 50;
     private int currentLoop = 1;
+    
+    // FIX: Сохраняем размеры для отслеживания изменений
+    private int lastWidth;
+    private int lastHeight;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -63,6 +67,10 @@ public class VSMainWindow extends Screen {
 
     @Override
     protected void init() {
+        // FIX: Сохраняем текущие размеры
+        this.lastWidth = this.width;
+        this.lastHeight = this.height;
+        
         panelW = (int)(this.width * WIDTH_RATIO);
         panelH = (int)(this.height * HEIGHT_RATIO);
         panelX = (this.width - panelW) / 2;
@@ -94,6 +102,19 @@ public class VSMainWindow extends Screen {
         syncFieldsWithTab();
     }
     
+    // FIX: Переопределяем resize для закрытия окна при изменении размера
+    @Override
+    public void resize(Minecraft mc, int width, int height) {
+        // Проверяем, изменился ли размер окна
+        if (width != this.lastWidth || height != this.lastHeight) {
+            // Закрываем окно мода
+            mc.displayGuiScreen(null);
+            isOpen = false;
+            return;
+        }
+        super.resize(mc, width, height);
+    }
+    
     private void switchTab(String id) {
         tabManager.switchTab(id);
         syncFieldsWithTab();
@@ -112,12 +133,10 @@ public class VSMainWindow extends Screen {
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
         
-        // FIX: Кнопка Clear в левом нижнем углу
         clearButton = new Button(panelX + 5, bottomY, 60, 20,
             new StringTextComponent("Clear"), btn -> clearChat());
         this.addButton(clearButton);
         
-        // Delay label + field
         this.font.drawString(new MatrixStack(), "Delay:", 
             (float)(panelX + 75), (float)(bottomY + 5), 0xFFAAAAAA);
         
@@ -128,7 +147,6 @@ public class VSMainWindow extends Screen {
         delayField.setMaxStringLength(5);
         this.children.add(delayField);
         
-        // Loop label + field
         this.font.drawString(new MatrixStack(), "Loop:", 
             (float)(panelX + 180), (float)(bottomY + 5), 0xFFAAAAAA);
         
@@ -139,20 +157,17 @@ public class VSMainWindow extends Screen {
         loopField.setMaxStringLength(4);
         this.children.add(loopField);
         
-        // FIX: Stop button — всегда активна
         stopButton = new Button(panelX + 290, bottomY, 60, 20,
             new StringTextComponent("Stop"), btn -> stopMacro());
-        stopButton.active = true; // FIX: Всегда активна
+        stopButton.active = true;
         this.addButton(stopButton);
         
-        // FIX: Execute button — всегда активна
         executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
             new StringTextComponent("Execute"), btn -> executeMacro());
-        executeButton.active = true; // FIX: Всегда активна
+        executeButton.active = true;
         this.addButton(executeButton);
     }
     
-    // FIX: Метод для очистки чата (F3+D)
     private void clearChat() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.ingameGUI != null && mc.ingameGUI.getChatGUI() != null) {
