@@ -3,7 +3,6 @@ package com.vs.vscombo.feature.tabs;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.core.gui.IVSTab;
-import com.vs.vscombo.core.gui.VSMainWindow; // FIX: добавлен импорт
 import com.vs.vscombo.util.VSFileUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
@@ -17,7 +16,7 @@ import java.util.*;
 
 public class MacrosTab implements IVSTab {
     
-    private VSMainWindow parent;
+    private Screen parent;
     private int x, y, width, height;
     
     private final List<String> lines = new ArrayList<>(Collections.singletonList(""));
@@ -28,6 +27,9 @@ public class MacrosTab implements IVSTab {
     
     private final File saveFile;
     private static String clipboard = "";
+    
+    // Кнопки создаются здесь, но добавляются в VSMainWindow
+    private final List<Button> tabButtons = new ArrayList<>();
 
     public MacrosTab() {
         File configDir = new File(Minecraft.getInstance().gameDir, "config/vscombo");
@@ -37,15 +39,22 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void init(Screen parent, int x, int y, int width, int height) {
-        this.parent = (VSMainWindow) parent;
+        this.parent = parent;
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
-        
-        this.parent.addButton(new Button(
+        // Кнопки создаются в getButtons(), не здесь
+    }
+
+    @Override
+    public List<Button> getButtons(int x, int y, int width, int height) {
+        tabButtons.clear();
+        // Execute button (bottom right)
+        tabButtons.add(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
             btn -> executeCommands()
         ));
+        return tabButtons;
     }
 
     @Override
