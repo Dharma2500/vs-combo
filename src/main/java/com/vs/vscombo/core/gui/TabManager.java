@@ -1,7 +1,7 @@
 package com.vs.vscombo.core.gui;
 
 import com.vs.vscombo.feature.tabs.MacrosTab;
-import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.gui.screen.Screen;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,13 +15,12 @@ public class TabManager {
 
     public TabManager(VSMainWindow parent) {
         this.parent = parent;
-        // Register available tabs (Modular expansion)
         registerTab("macros1", new MacrosTab());
     }
     
     public void registerTab(String id, IVSTab tab) {
         tabs.put(id, tab);
-        if (activeTab == null) activeTab = tab; // Default first tab
+        if (activeTab == null) activeTab = tab;
     }
 
     public void init(int x, int y, int w, int h) {
@@ -36,7 +35,6 @@ public class TabManager {
             if (activeTab != null) activeTab.onHide();
             activeTab = tab;
             activeTab.onShow();
-            // Re-init position
             activeTab.init(parent, sidebarX + 120, sidebarY + 25, 
                     (int)(parent.width * 0.25f) - 130, (int)(parent.height * 0.25f) - 35);
         }
