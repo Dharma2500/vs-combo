@@ -6,11 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TabManager {
-    
     private final VSMainWindow parent;
     private final Map<String, IVSTab> tabs = new HashMap<>();
     private IVSTab activeTab;
-    
     private int sidebarX, sidebarY;
 
     public TabManager(VSMainWindow parent) {
