@@ -10,9 +10,12 @@ public interface IVSTab {
     void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks, int x, int y, int w, int h);
     boolean keyPressed(int keyCode, int scanCode, int modifiers);
     boolean charTyped(char codePoint, int modifiers);
+    // FIX: обработка клика мыши для позиционирования курсора
+    default boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentW, int contentH) {
+        return false;
+    }
     void onShow();
     void onHide();
-    // VS Core: Modular button registration pattern
     default List<Button> getButtons(int x, int y, int width, int height) {
         return java.util.Collections.emptyList();
     }
