@@ -14,8 +14,10 @@ public class VSMainWindow extends Screen {
     private static VSMainWindow instance;
     private static boolean isOpen = false;
     
+    // FIX: Фиксированный размер окна вместо пропорции
+    private static final int WINDOW_WIDTH = 1024;
+    private static final int WINDOW_HEIGHT = 768;
     private static final int BG_ALPHA = 200;
-    private static final float SCREEN_RATIO = 0.25f;
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     
@@ -43,12 +45,15 @@ public class VSMainWindow extends Screen {
 
     @Override
     protected void init() {
-        int winW = this.width;
-        int winH = this.height;
-        panelW = (int)(winW * SCREEN_RATIO);
-        panelH = (int)(winH * SCREEN_RATIO);
-        panelX = (winW - panelW) / 2;
-        panelY = (winH - panelH) / 2;
+        // FIX: Центрирование окна фиксированного размера
+        panelW = WINDOW_WIDTH;
+        panelH = WINDOW_HEIGHT;
+        panelX = (this.width - panelW) / 2;
+        panelY = (this.height - panelH) / 2;
+        
+        // Если экран меньше окна - корректируем позицию
+        if (panelX < 0) panelX = 0;
+        if (panelY < 0) panelY = 0;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
@@ -95,6 +100,7 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // FIX: Только GLFW_KEY_X (GLFW_KEY_x не существует)
         if (suppressNextChar && keyCode == GLFW.GLFW_KEY_X) {
             suppressNextChar = false;
             return true;
