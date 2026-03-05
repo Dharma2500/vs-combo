@@ -49,7 +49,6 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
-        // addButton доступен в подклассе Screen
         this.addButton(new Button(
             panelX + 5, panelY + 25, 100, 20, 
             new StringTextComponent("Macros#1"), 
@@ -59,25 +58,20 @@ public class VSMainWindow extends Screen {
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        // Dark overlay
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
-        // Panel background
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         
-        // Border using AbstractGui static methods (1.16.5 signature)
         AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY, 0xFF555555);
         AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY + panelH, 0xFF555555);
         AbstractGui.drawVerticalLine(matrixStack, panelX, panelY, panelY + panelH, 0xFF555555);
         AbstractGui.drawVerticalLine(matrixStack, panelX + panelW, panelY, panelY + panelH, 0xFF555555);
         
-        // Header - font.drawString: (MatrixStack, String, float x, float y, int color)
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
         
-        // Active tab
         if (this.tabManager.getActiveTab() != null) {
             this.tabManager.getActiveTab().render(matrixStack, mouseX, mouseY, partialTicks, 
                     panelX + 120, panelY + 25, panelW - 130, panelH - 35);
