@@ -10,6 +10,9 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
+// FIX: Добавлен импорт MacrosTab
+import com.vs.vscombo.feature.tabs.MacrosTab;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,31 +94,28 @@ public class VSMainWindow extends Screen {
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
         
-        // Delay label
         this.font.drawString(new MatrixStack(), "Delay (ms):", 
             (float)(contentX + 5), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        // Delay input field
         delayField = new TextFieldWidget(this.font, contentX + 70, bottomY, 60, 18,
             new StringTextComponent("Delay"));
         delayField.setText(String.valueOf(lineDelay));
         delayField.setTextColor(0xFFFFFF);
         delayField.setResponder(this::onDelayChanged);
-        this.addChild(delayField);
+        // FIX: addWidget вместо addChild для Forge 1.16.5
+        this.addWidget(delayField);
         
-        // Timer label
         this.font.drawString(new MatrixStack(), "Timer (sec):", 
             (float)(contentX + 145), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        // Timer input field
         timerField = new TextFieldWidget(this.font, contentX + 225, bottomY, 60, 18,
             new StringTextComponent("Timer"));
         timerField.setText(String.valueOf(executionTimer));
         timerField.setTextColor(0xFFFFFF);
         timerField.setResponder(this::onTimerChanged);
-        this.addChild(timerField);
+        // FIX: addWidget вместо addChild
+        this.addWidget(timerField);
         
-        // Execute button in bottom section
         this.addButton(new Button(
             panelX + panelW - 95, bottomY,
             80, 20,
@@ -145,6 +145,7 @@ public class VSMainWindow extends Screen {
     }
     
     private void executeActiveTab() {
+        // FIX: MacrosTab импортирован, проверка через instanceof
         if (this.tabManager.getActiveTab() instanceof MacrosTab) {
             ((MacrosTab) this.tabManager.getActiveTab()).executeWithSettings();
         }
@@ -169,7 +170,6 @@ public class VSMainWindow extends Screen {
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        // Bottom section separator
         int bottomSectionY = panelY + panelH - BOTTOM_SECTION_HEIGHT;
         AbstractGui.fill(matrixStack, panelX, bottomSectionY, panelX + panelW, bottomSectionY + 1, 0xFF555555);
         
@@ -181,7 +181,6 @@ public class VSMainWindow extends Screen {
                     contentX, contentY, contentW, contentH);
         }
         
-        // Render input fields
         if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
         if (timerField != null) timerField.render(matrixStack, mouseX, mouseY, partialTicks);
         
