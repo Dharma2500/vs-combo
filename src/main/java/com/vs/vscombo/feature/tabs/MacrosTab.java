@@ -16,7 +16,7 @@ import java.util.*;
 
 public class MacrosTab implements IVSTab {
     
-    private Screen parent;
+    private VSMainWindow parent; // FIX: конкретный тип вместо Screen
     private int x, y, width, height;
     
     private final List<String> lines = new ArrayList<>(Collections.singletonList(""));
@@ -36,11 +36,13 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void init(Screen parent, int x, int y, int width, int height) {
-        this.parent = parent;
+        // FIX: кастуем к VSMainWindow для доступа к protected addButton
+        this.parent = (VSMainWindow) parent;
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
         
-        parent.addButton(new Button(
+        // FIX: addButton вызывается через this.parent, который теперь VSMainWindow
+        this.parent.addButton(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
             btn -> executeCommands()
@@ -50,7 +52,7 @@ public class MacrosTab implements IVSTab {
     @Override
     public void render(MatrixStack ms, int mouseX, int mouseY, float pt, int x, int y, int w, int h) {
         AbstractGui.fill(ms, x, y, x + w, y + h, 0xFF252525);
-        drawBorder(ms, x, y, x + w, y + h, 0xFF444444);
+        drawBorder(ms, x, y, w, h, 0xFF444444);
         
         long now = System.currentTimeMillis();
         if (now - lastCursorToggle > 500) {
@@ -83,11 +85,12 @@ public class MacrosTab implements IVSTab {
         }
     }
 
-    private void drawBorder(MatrixStack ms, int x1, int y1, int x2, int y2, int color) {
-        AbstractGui.drawHorizontalLine(ms, x1, x2, y1, color);
-        AbstractGui.drawHorizontalLine(ms, x1, x2, y2, color);
-        AbstractGui.drawVerticalLine(ms, x1, y1, y2, color);
-        AbstractGui.drawVerticalLine(ms, x2, y1, y2, color);
+    // FIX: рамка через fill, не через drawHorizontalLine
+    private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
+        AbstractGui.fill(ms, x, y, x + w, y + 1, color);
+        AbstractGui.fill(ms, x, y + h - 1, x + w, y + h, color);
+        AbstractGui.fill(ms, x, y, x + 1, y + h, color);
+        AbstractGui.fill(ms, x + w - 1, y, x + w, y + h, color);
     }
 
     @Override
