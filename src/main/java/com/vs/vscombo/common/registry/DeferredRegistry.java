@@ -6,10 +6,9 @@ import com.vs.vscombo.core.keybind.ModKeybindings;
 import net.minecraftforge.eventbus.api.IEventBus;
 
 public class DeferredRegistry {
-    
     public static void register(IEventBus bus) {
         VSConfig.load();
         ModKeybindings.register(bus);
-        VSBaseMod.LOGGER.debug("VS Registry: All systems operational.");
+        VSBaseMod.LOGGER.debug("VS Registry: Operational.");
     }
 }
