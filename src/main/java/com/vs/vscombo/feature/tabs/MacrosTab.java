@@ -38,15 +38,22 @@ public class MacrosTab implements IVSTab {
     @Override
     public void init(Screen parent, int x, int y, int width, int height) {
         this.parent = parent;
-        this.x = x; this.y = y; this.width = width; this.height = height;
+        this.x = x; 
+        this.y = y; 
+        this.width = width; 
+        this.height = height;
         loadContent();
     }
 
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
+        // FIX: Execute button at the bottom
         tabButtons.add(new Button(
-            x + width - 85, y + height - 25, 80, 20,
+            x + width - 85, 
+            y, 
+            80, 
+            20,
             new StringTextComponent("Execute"),
             btn -> executeCommands()
         ));
