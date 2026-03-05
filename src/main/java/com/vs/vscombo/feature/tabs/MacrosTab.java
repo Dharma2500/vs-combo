@@ -29,7 +29,6 @@ public class MacrosTab implements IVSTab {
     private static String clipboard = "";
 
     public MacrosTab() {
-        // В 1.16.5: gameDir - публичное поле типа File
         File configDir = new File(Minecraft.getInstance().gameDir, "config/vscombo");
         if (!configDir.exists()) configDir.mkdirs();
         this.saveFile = new File(configDir, "macros1.dat");
@@ -41,7 +40,6 @@ public class MacrosTab implements IVSTab {
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
         
-        // addButton вызывается на родителе, который является Screen-подклассом
         parent.addButton(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
@@ -51,11 +49,9 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void render(MatrixStack ms, int mouseX, int mouseY, float pt, int x, int y, int w, int h) {
-        // Background using AbstractGui.fill (MatrixStack, x1, y1, x2, y2, color)
         AbstractGui.fill(ms, x, y, x + w, y + h, 0xFF252525);
         drawBorder(ms, x, y, x + w, y + h, 0xFF444444);
         
-        // Cursor blink
         long now = System.currentTimeMillis();
         if (now - lastCursorToggle > 500) {
             cursorVisible = !cursorVisible;
@@ -63,7 +59,6 @@ public class MacrosTab implements IVSTab {
         }
         
         Minecraft mc = Minecraft.getInstance();
-        // В 1.16.5: fontRenderer - публичное поле Minecraft
         int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
         int visibleLines = h / lineHeight;
         int visibleCols = w / 6;
@@ -77,10 +72,8 @@ public class MacrosTab implements IVSTab {
             if (display.length() > visibleCols) display = display.substring(0, visibleCols);
             
             int drawY = y + i * lineHeight;
-            // fontRenderer.drawString: (MatrixStack, String, float x, float y, int color)
             mc.fontRenderer.drawString(ms, display, (float)(x + 2), (float)drawY, 0xFFCCCCCC);
             
-            // Cursor rendering
             if (lineIdx == cursorLine && cursorVisible) {
                 int cx = x + 2 + (cursorCol - scrollX) * 6;
                 if (cx >= x + 2 && cx < x + w) {
@@ -91,7 +84,6 @@ public class MacrosTab implements IVSTab {
     }
 
     private void drawBorder(MatrixStack ms, int x1, int y1, int x2, int y2, int color) {
-        // AbstractGui static methods: (MatrixStack, xStart, xEnd, y, color)
         AbstractGui.drawHorizontalLine(ms, x1, x2, y1, color);
         AbstractGui.drawHorizontalLine(ms, x1, x2, y2, color);
         AbstractGui.drawVerticalLine(ms, x1, y1, y2, color);
@@ -100,15 +92,9 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_UP && cursorLine > 0) {
-            cursorLine--; adjustCol(); saveContent(); return true;
-        }
-        if (keyCode == GLFW.GLFW_KEY_DOWN && cursorLine < lines.size() - 1) {
-            cursorLine++; adjustCol(); saveContent(); return true;
-        }
-        if (keyCode == GLFW.GLFW_KEY_LEFT && cursorCol > 0) {
-            cursorCol--; scrollCursor(); saveContent(); return true;
-        }
+        if (keyCode == GLFW.GLFW_KEY_UP && cursorLine > 0) { cursorLine--; adjustCol(); saveContent(); return true; }
+        if (keyCode == GLFW.GLFW_KEY_DOWN && cursorLine < lines.size() - 1) { cursorLine++; adjustCol(); saveContent(); return true; }
+        if (keyCode == GLFW.GLFW_KEY_LEFT && cursorCol > 0) { cursorCol--; scrollCursor(); saveContent(); return true; }
         if (keyCode == GLFW.GLFW_KEY_RIGHT) {
             String line = lines.get(cursorLine);
             if (cursorCol < line.length()) { cursorCol++; scrollCursor(); saveContent(); return true; }
@@ -159,7 +145,6 @@ public class MacrosTab implements IVSTab {
         int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
         int visibleLines = height / lineHeight;
         int visibleCols = width / 6;
-        
         while (cursorLine - scrollY >= visibleLines) scrollY++;
         while (cursorLine < scrollY) scrollY = Math.max(0, scrollY - 1);
         while (cursorCol - scrollX >= visibleCols) scrollX++;
@@ -177,16 +162,12 @@ public class MacrosTab implements IVSTab {
         for (String line : lines) {
             String cmd = line.trim();
             if (!cmd.isEmpty() && cmd.startsWith("/")) {
-                // В 1.16.5: sendChatMessage(String) существует у PlayerEntity
                 mc.player.sendChatMessage(cmd);
             }
         }
     }
     
-    private void saveContent() {
-        VSFileUtil.saveString(saveFile, String.join("\n", lines));
-    }
-    
+    private void saveContent() { VSFileUtil.saveString(saveFile, String.join("\n", lines)); }
     private void loadContent() {
         String data = VSFileUtil.loadString(saveFile);
         if (data != null) {
@@ -196,9 +177,7 @@ public class MacrosTab implements IVSTab {
         }
     }
     
-    private void copySelection() {
-        if (cursorLine < lines.size()) clipboard = lines.get(cursorLine);
-    }
+    private void copySelection() { if (cursorLine < lines.size()) clipboard = lines.get(cursorLine); }
     private void pasteClipboard() {
         if (!clipboard.isEmpty()) {
             String line = lines.get(cursorLine);
