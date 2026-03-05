@@ -16,23 +16,25 @@ import java.util.*;
 
 public class MacrosTab implements IVSTab {
     
-    private Screen parent;
-    private int x, y, width, height;
+    protected final String tabId;
+    protected final File saveFile;
+    protected Screen parent;
+    protected int x, y, width, height;
     
-    private final List<String> lines = new ArrayList<>(Collections.singletonList(""));
-    private int cursorLine = 0, cursorCol = 0;
-    private boolean cursorVisible = true;
-    private long lastCursorToggle = 0;
-    private int scrollX = 0, scrollY = 0;
+    protected final List<String> lines = new ArrayList<>(Collections.singletonList(""));
+    protected int cursorLine = 0, cursorCol = 0;
+    protected boolean cursorVisible = true;
+    protected long lastCursorToggle = 0;
+    protected int scrollX = 0, scrollY = 0;
     
-    private final File saveFile;
-    private static String clipboard = "";
-    private final List<Button> tabButtons = new ArrayList<>();
+    protected static String clipboard = "";
+    protected final List<Button> tabButtons = new ArrayList<>();
 
-    public MacrosTab() {
+    public MacrosTab(String tabId) {
+        this.tabId = tabId;
         File configDir = new File(Minecraft.getInstance().gameDir, "config/vscombo");
         if (!configDir.exists()) configDir.mkdirs();
-        this.saveFile = new File(configDir, "macros1.dat");
+        this.saveFile = new File(configDir, "macros" + tabId + ".dat");
     }
 
     @Override
@@ -48,10 +50,9 @@ public class MacrosTab implements IVSTab {
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
-        // FIX: Execute button at the bottom (below text area)
         tabButtons.add(new Button(
             x + width - 85, 
-            y + height + 5,  // FIX: positioned below the text area
+            y, 
             80, 
             20,
             new StringTextComponent("Execute"),
@@ -123,7 +124,7 @@ public class MacrosTab implements IVSTab {
         return true;
     }
 
-    private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
+    protected void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
         AbstractGui.fill(ms, x, y, x + w, y + 1, color);
         AbstractGui.fill(ms, x, y + h - 1, x + w, y + h, color);
         AbstractGui.fill(ms, x, y, x + 1, y + h, color);
@@ -180,7 +181,7 @@ public class MacrosTab implements IVSTab {
         return true;
     }
     
-    private void scrollCursor() {
+    protected void scrollCursor() {
         Minecraft mc = Minecraft.getInstance();
         int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
         int visibleLines = height / lineHeight;
@@ -191,12 +192,12 @@ public class MacrosTab implements IVSTab {
         while (cursorCol < scrollX) scrollX = Math.max(0, scrollX - 1);
     }
     
-    private void adjustCol() {
+    protected void adjustCol() {
         String line = lines.get(cursorLine);
         if (cursorCol > line.length()) cursorCol = line.length();
     }
 
-    private void executeCommands() {
+    protected void executeCommands() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             VSBaseMod.LOGGER.warn("Cannot execute: player is null");
@@ -228,12 +229,14 @@ public class MacrosTab implements IVSTab {
             }
         }
         
-        VSBaseMod.LOGGER.info("Executed {} commands from Macros#1", sentCount);
+        VSBaseMod.LOGGER.info("Executed {} commands from Macros#{}", sentCount, tabId);
     }
     
-    private void saveContent() { VSFileUtil.saveString(saveFile, String.join("\n", lines)); }
+    protected void saveContent() { 
+        VSFileUtil.saveString(saveFile, String.join("\n", lines)); 
+    }
     
-    private void loadContent() {
+    protected void loadContent() {
         String data = VSFileUtil.loadString(saveFile);
         if (data != null) {
             lines.clear();
@@ -242,9 +245,11 @@ public class MacrosTab implements IVSTab {
         }
     }
     
-    private void copySelection() { if (cursorLine < lines.size()) clipboard = lines.get(cursorLine); }
+    protected void copySelection() { 
+        if (cursorLine < lines.size()) clipboard = lines.get(cursorLine); 
+    }
     
-    private void pasteClipboard() {
+    protected void pasteClipboard() {
         if (!clipboard.isEmpty()) {
             String line = lines.get(cursorLine);
             lines.set(cursorLine, line.substring(0, cursorCol) + clipboard + line.substring(cursorCol));
@@ -252,8 +257,13 @@ public class MacrosTab implements IVSTab {
         }
     }
     
-    private void cutSelection() { copySelection(); }
+    protected void cutSelection() { 
+        copySelection(); 
+    }
 
-    @Override public void onShow() {}
-    @Override public void onHide() {}
+    @Override 
+    public void onShow() {}
+    
+    @Override 
+    public void onHide() {}
 }
