@@ -13,7 +13,8 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
-@Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT)
+// FIX: bus = Mod.EventBusSubscriber.Bus.FORGE для runtime-событий
+@Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ModKeybindings {
 
     public static final KeyBinding OPEN_VS_MENU = new KeyBinding(
@@ -27,7 +28,8 @@ public class ModKeybindings {
 
     public static void register(net.minecraftforge.eventbus.api.IEventBus bus) {
         ClientRegistry.registerKeyBinding(OPEN_VS_MENU);
-        bus.register(ModKeybindings.class);
+        // Не регистрируем этот класс на mod bus - он уже зарегистрирован на FORGE bus через аннотацию
+        VSBaseMod.LOGGER.debug("VS Keybindings: Registered on FORGE bus.");
     }
 
     @SubscribeEvent
