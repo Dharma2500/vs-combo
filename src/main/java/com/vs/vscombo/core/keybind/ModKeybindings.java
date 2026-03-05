@@ -13,10 +13,10 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
-// FIX: bus = Mod.EventBusSubscriber.Bus.FORGE для runtime-событий
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ModKeybindings {
 
+    // FIX: категория "Vitaly_Sokolov Universe", ключ для локализации
     public static final KeyBinding OPEN_VS_MENU = new KeyBinding(
             "key.vscombo.open_menu",
             KeyConflictContext.IN_GAME,
@@ -28,7 +28,6 @@ public class ModKeybindings {
 
     public static void register(net.minecraftforge.eventbus.api.IEventBus bus) {
         ClientRegistry.registerKeyBinding(OPEN_VS_MENU);
-        // Не регистрируем этот класс на mod bus - он уже зарегистрирован на FORGE bus через аннотацию
         VSBaseMod.LOGGER.debug("VS Keybindings: Registered on FORGE bus.");
     }
 
