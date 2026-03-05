@@ -32,7 +32,7 @@ public class ModKeybindings {
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (OPEN_VS_MENU.isPressed()) {
+        if (OPEN_VS_MENU.isKeyDown()) {
             VSMainWindow.toggle();
         }
     }
