@@ -49,6 +49,7 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
+        // addButton доступен в подклассе Screen
         this.addButton(new Button(
             panelX + 5, panelY + 25, 100, 20, 
             new StringTextComponent("Macros#1"), 
@@ -65,15 +66,16 @@ public class VSMainWindow extends Screen {
         
         // Panel background
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
-        // Border
+        
+        // Border using AbstractGui static methods (1.16.5 signature)
         AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY, 0xFF555555);
         AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY + panelH, 0xFF555555);
         AbstractGui.drawVerticalLine(matrixStack, panelX, panelY, panelY + panelH, 0xFF555555);
         AbstractGui.drawVerticalLine(matrixStack, panelX + panelW, panelY, panelY + panelH, 0xFF555555);
         
-        // Header
+        // Header - font.drawString: (MatrixStack, String, float x, float y, int color)
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
-                panelX + 10, panelY + 8, TEXT_COLOR);
+                (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
         
         // Active tab
         if (this.tabManager.getActiveTab() != null) {
