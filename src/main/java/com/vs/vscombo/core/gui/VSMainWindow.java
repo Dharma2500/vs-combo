@@ -9,6 +9,9 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class VSMainWindow extends Screen {
     
     private static VSMainWindow instance;
@@ -26,6 +29,9 @@ public class VSMainWindow extends Screen {
     private int panelX, panelY, panelW, panelH;
     private int contentX, contentY, contentW, contentH;
     private static boolean suppressNextChar = false;
+    
+    // FIX: Track tab-specific buttons for proper cleanup
+    private final List<Button> tabButtons = new ArrayList<>();
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -59,6 +65,7 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
+        // Sidebar button (persistent)
         this.addButton(new Button(
             panelX + 5, 
             panelY + 25, 
@@ -68,10 +75,25 @@ public class VSMainWindow extends Screen {
             btn -> tabManager.switchTab("macros1")
         ));
         
+        // FIX: Initialize tab buttons once
+        initTabButtons();
+    }
+    
+    private void initTabButtons() {
+        // FIX: Remove old tab buttons first
+        for (Button btn : tabButtons) {
+            this.children.remove(btn);
+            this.buttons.remove(btn);
+        }
+        tabButtons.clear();
+        
+        // Add new tab buttons
         if (this.tabManager.getActiveTab() != null) {
-            for (Button btn : this.tabManager.getActiveTab().getButtons(
-                    contentX, contentY + contentH, contentW, EXECUTE_BUTTON_HEIGHT)) {
+            List<Button> newButtons = this.tabManager.getActiveTab().getButtons(
+                    contentX, contentY + contentH, contentW, EXECUTE_BUTTON_HEIGHT);
+            for (Button btn : newButtons) {
                 this.addButton(btn);
+                tabButtons.add(btn);
             }
         }
     }
@@ -82,14 +104,13 @@ public class VSMainWindow extends Screen {
         RenderSystem.defaultBlendFunc();
         AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
-        // Main panel background
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         
-        // FIX: Only top and bottom borders (no vertical lines)
+        // Horizontal borders only
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        // Horizontal separator above Execute button area
+        // Separator above Execute
         int separatorY = panelY + panelH - EXECUTE_BUTTON_HEIGHT - 5;
         AbstractGui.fill(matrixStack, panelX, separatorY, panelX + panelW, separatorY + 1, 0xFF555555);
         
@@ -149,10 +170,9 @@ public class VSMainWindow extends Screen {
         super.onClose();
     }
     
-    public void reinitTabButtons(IVSTab tab, int x, int y, int w, int h) {
-        for (Button btn : tab.getButtons(x, y, w, h)) {
-            this.addButton(btn);
-        }
+    // FIX: Proper button lifecycle management
+    public void reinitTabButtons() {
+        initTabButtons();
     }
     
     public int getContentX() { return contentX; }
