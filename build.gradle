@@ -14,7 +14,7 @@ apply plugin: 'maven-publish'
 
 version = '1.0'
 group = 'com.vs.vscombo'
-archivesBaseName = 'vscombo'
+archivesBaseName = 'vs-base' // ИЗМЕНЕНО: имя итогового jar-файла
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
@@ -26,32 +26,16 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
-
             mods {
                 vscombo {
                     source sourceSets.main
                 }
             }
         }
-
         server {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
-
-            mods {
-                vscombo {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        data {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            args '--mod', 'vscombo', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-
             mods {
                 vscombo {
                     source sourceSets.main
@@ -75,28 +59,15 @@ dependencies {
 jar {
     manifest {
         attributes([
-                "Specification-Title": "vscombo",
-                "Specification-Vendor": "vs",
+                "Specification-Title": "vs-base",
+                "Specification-Vendor": "vitaly_sokolov",
                 "Specification-Version": "1",
                 "Implementation-Title": project.name,
                 "Implementation-Version": "${version}",
-                "Implementation-Vendor": "vs",
+                "Implementation-Vendor": "vitaly_sokolov",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
 }
 
 jar.finalizedBy('reobfJar')
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file:///${project.projectDir}/mcmodsrepo"
-        }
-    }
-}
