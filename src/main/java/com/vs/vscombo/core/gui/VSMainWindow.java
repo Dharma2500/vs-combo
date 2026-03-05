@@ -10,7 +10,6 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
-// FIX: Добавлен импорт MacrosTab
 import com.vs.vscombo.feature.tabs.MacrosTab;
 
 import java.util.ArrayList;
@@ -102,8 +101,8 @@ public class VSMainWindow extends Screen {
         delayField.setText(String.valueOf(lineDelay));
         delayField.setTextColor(0xFFFFFF);
         delayField.setResponder(this::onDelayChanged);
-        // FIX: addWidget вместо addChild для Forge 1.16.5
-        this.addWidget(delayField);
+        // FIX: В 1.16.5 добавляем виджет напрямую в children
+        this.children.add(delayField);
         
         this.font.drawString(new MatrixStack(), "Timer (sec):", 
             (float)(contentX + 145), (float)(bottomY + 5), 0xFFAAAAAA);
@@ -113,8 +112,8 @@ public class VSMainWindow extends Screen {
         timerField.setText(String.valueOf(executionTimer));
         timerField.setTextColor(0xFFFFFF);
         timerField.setResponder(this::onTimerChanged);
-        // FIX: addWidget вместо addChild
-        this.addWidget(timerField);
+        // FIX: В 1.16.5 добавляем виджет напрямую в children
+        this.children.add(timerField);
         
         this.addButton(new Button(
             panelX + panelW - 95, bottomY,
@@ -145,7 +144,6 @@ public class VSMainWindow extends Screen {
     }
     
     private void executeActiveTab() {
-        // FIX: MacrosTab импортирован, проверка через instanceof
         if (this.tabManager.getActiveTab() instanceof MacrosTab) {
             ((MacrosTab) this.tabManager.getActiveTab()).executeWithSettings();
         }
