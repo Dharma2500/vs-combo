@@ -111,7 +111,14 @@ public class VSMainWindow extends Screen {
         }
         return super.charTyped(codePoint, modifiers);
     }
-    
+        // VS Core: Dynamic button re-registration for tab switching
+    public void reinitTabButtons(IVSTab tab, int x, int y, int w, int h) {
+        // Clear old tab buttons (simple approach: remove last N buttons)
+        // In production: track button references properly
+        for (Button btn : tab.getButtons(x, y, w, h)) {
+            this.addButton(btn);
+        }
+    }
     @Override
     public void onClose() {
         isOpen = false;
