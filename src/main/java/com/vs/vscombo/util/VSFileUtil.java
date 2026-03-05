@@ -9,8 +9,8 @@ public class VSFileUtil {
     public static void saveString(File file, String content) {
         try {
             if (file.getParentFile() != null) file.getParentFile().mkdirs();
-            try (OutputStream os = new FileOutputStream(file);
-                 Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+            try (FileOutputStream fos = new FileOutputStream(file);
+                 OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
                 writer.write(content);
             }
         } catch (IOException e) {
@@ -20,8 +20,8 @@ public class VSFileUtil {
     
     public static String loadString(File file) {
         if (!file.exists()) return null;
-        try (InputStream is = new FileInputStream(file);
-             Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+        try (FileInputStream fis = new FileInputStream(file);
+             InputStreamReader reader = new InputStreamReader(fis, StandardCharsets.UTF_8);
              BufferedReader br = new BufferedReader(reader)) {
             StringBuilder sb = new StringBuilder();
             String line;
