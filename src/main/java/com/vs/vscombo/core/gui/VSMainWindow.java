@@ -15,7 +15,7 @@ public class VSMainWindow extends Screen {
     private static boolean isOpen = false;
     
     private static final int BG_ALPHA = 200;
-    private static final float SCREEN_RATIO = 1.0f;
+    private static final float SCREEN_RATIO = 0.25f;
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     
@@ -95,7 +95,6 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // FIX: только GLFW_KEY_X, без несуществующего GLFW_KEY_x
         if (suppressNextChar && keyCode == GLFW.GLFW_KEY_X) {
             suppressNextChar = false;
             return true;
