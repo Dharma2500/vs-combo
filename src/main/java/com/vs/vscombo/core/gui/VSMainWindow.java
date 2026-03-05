@@ -20,6 +20,7 @@ public class VSMainWindow extends Screen {
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     private static final int SIDEBAR_WIDTH = 120;
+    private static final int EXECUTE_BUTTON_HEIGHT = 30;
     
     private TabManager tabManager;
     private int panelX, panelY, panelW, panelH;
@@ -53,8 +54,9 @@ public class VSMainWindow extends Screen {
         
         contentX = panelX + SIDEBAR_WIDTH;
         contentY = panelY + 25;
+        // FIX: Content height excludes execute button area
         contentW = panelW - SIDEBAR_WIDTH - 10;
-        contentH = panelH - 60;
+        contentH = panelH - 60 - EXECUTE_BUTTON_HEIGHT;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
@@ -69,7 +71,7 @@ public class VSMainWindow extends Screen {
         
         if (this.tabManager.getActiveTab() != null) {
             for (Button btn : this.tabManager.getActiveTab().getButtons(
-                    contentX, contentY + contentH - 25, contentW, 25)) {
+                    contentX, contentY + contentH, contentW, EXECUTE_BUTTON_HEIGHT)) {
                 this.addButton(btn);
             }
         }
@@ -84,7 +86,6 @@ public class VSMainWindow extends Screen {
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         drawBorder(matrixStack, panelX, panelY, panelW, panelH, 0xFF555555);
         
-        // FIX: Sidebar separator using fill instead of drawVerticalLine
         AbstractGui.fill(matrixStack, 
             panelX + SIDEBAR_WIDTH, panelY, 
             panelX + SIDEBAR_WIDTH + 1, panelY + panelH, 
