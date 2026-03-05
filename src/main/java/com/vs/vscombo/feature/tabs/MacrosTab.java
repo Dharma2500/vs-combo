@@ -7,8 +7,6 @@ import com.vs.vscombo.util.VSFileUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
@@ -31,20 +29,13 @@ public class MacrosTab implements IVSTab {
     protected int scrollX = 0, scrollY = 0;
     
     protected static String clipboard = "";
-    protected final List<Button> tabButtons = new ArrayList<>();
     
-    // FIX: Per-tab settings
+    // Per-tab settings
     protected int delay = 50;
     protected int loopCount = 1;
     protected boolean isRunning = false;
     protected AtomicBoolean shouldStop = new AtomicBoolean(false);
     protected Thread executionThread = null;
-    
-    // UI Widgets
-    protected TextFieldWidget delayField;
-    protected TextFieldWidget loopField;
-    protected Button stopButton;
-    protected Button executeButton;
 
     public MacrosTab(String tabId) {
         this.tabId = tabId;
@@ -63,114 +54,6 @@ public class MacrosTab implements IVSTab {
         this.width = width; 
         this.height = height;
         loadContent();
-        
-        int bottomY = y + height - 30;
-        
-        // Delay field
-        delayField = new TextFieldWidget(Minecraft.getInstance().fontRenderer, 
-            x + 5, bottomY + 5, 60, 18, new StringTextComponent("Delay"));
-        delayField.setText(String.valueOf(delay));
-        delayField.setTextColor(0xFFFFFF);
-        delayField.setFilter(s -> s.matches("\\d*"));
-        parent.addChild(delayField);
-        
-        // Loop field
-        loopField = new TextFieldWidget(Minecraft.getInstance().fontRenderer,
-            x + 75, bottomY + 5, 60, 18, new StringTextComponent("Loop"));
-        loopField.setText(String.valueOf(loopCount));
-        loopField.setTextColor(0xFFFFFF);
-        loopField.setFilter(s -> s.matches("\\d*"));
-        parent.addChild(loopField);
-        
-        // Stop button
-        stopButton = new Button(x + 145, bottomY, 70, 20,
-            new StringTextComponent("Stop"), btn -> stopExecution());
-        stopButton.active = false;
-        parent.addButton(stopButton);
-        
-        // Execute button
-        executeButton = new Button(x + width - 85, bottomY, 80, 20,
-            new StringTextComponent("Execute"), btn -> startExecution());
-        parent.addButton(executeButton);
-    }
-    
-    private void startExecution() {
-        if (isRunning) return;
-        
-        try {
-            delay = Integer.parseInt(delayField.getText());
-            loopCount = Integer.parseInt(loopField.getText());
-        } catch (NumberFormatException e) {
-            delay = 50;
-            loopCount = 1;
-        }
-        
-        saveSettings();
-        isRunning = true;
-        shouldStop.set(false);
-        stopButton.active = true;
-        executeButton.active = false;
-        
-        executionThread = new Thread(() -> {
-            try {
-                executeWithLoop();
-            } finally {
-                isRunning = false;
-                stopButton.active = false;
-                executeButton.active = true;
-            }
-        }, "MacroExecutor-" + tabId);
-        executionThread.start();
-    }
-    
-    protected void stopExecution() {
-        shouldStop.set(true);
-        if (executionThread != null) {
-            executionThread.interrupt();
-        }
-    }
-    
-    protected void executeWithLoop() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null) {
-            VSBaseMod.LOGGER.warn("Cannot execute: player or connection is null");
-            return;
-        }
-        
-        for (int loop = 0; loop < loopCount && !shouldStop.get(); loop++) {
-            if (shouldStop.get()) break;
-            
-            for (String line : lines) {
-                if (shouldStop.get()) break;
-                
-                String trimmed = line.trim();
-                if (trimmed.isEmpty()) continue;
-                
-                String cmd = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
-                final String finalCmd = cmd;
-                
-                mc.execute(() -> {
-                    if (mc.player != null) {
-                        mc.player.sendChatMessage(finalCmd);
-                    }
-                });
-                
-                try {
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-        
-        VSBaseMod.LOGGER.info("Macro {} completed {} loop(s)", tabId, loopCount);
-    }
-
-    @Override
-    public List<Button> getButtons(int x, int y, int width, int height) {
-        tabButtons.clear();
-        return tabButtons;
     }
 
     @Override
@@ -208,17 +91,10 @@ public class MacrosTab implements IVSTab {
                 }
             }
         }
-        
-        // Render widgets
-        if (delayField != null) delayField.render(ms, mouseX, mouseY, pt);
-        if (loopField != null) loopField.render(ms, mouseX, mouseY, pt);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentW, int contentH) {
-        if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) return true;
-        if (loopField != null && loopField.mouseClicked(mouseX, mouseY, button)) return true;
-        
         if (mouseX < contentX || mouseX >= contentX + contentW || 
             mouseY < contentY || mouseY >= contentY + contentH) {
             return false;
@@ -253,15 +129,6 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
-            updateSettingsFromFields();
-            return true;
-        }
-        if (loopField != null && loopField.keyPressed(keyCode, scanCode, modifiers)) {
-            updateSettingsFromFields();
-            return true;
-        }
-        
         boolean ctrl = (modifiers & 2) != 0;
         
         if (ctrl && keyCode == GLFW.GLFW_KEY_V) {
@@ -340,48 +207,72 @@ public class MacrosTab implements IVSTab {
         String line = lines.get(cursorLine);
         if (cursorCol > line.length()) cursorCol = line.length();
     }
+
+    // FIX: Публичный метод для вызова из VSMainWindow
+    public void executeWithSettings(int delay, int loopCount) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null) {
+            VSBaseMod.LOGGER.warn("Cannot execute: player or connection is null");
+            return;
+        }
+        
+        if (isRunning) return;
+        isRunning = true;
+        shouldStop.set(false);
+        
+        executionThread = new Thread(() -> {
+            try {
+                for (int loop = 0; loop < loopCount && !shouldStop.get(); loop++) {
+                    if (shouldStop.get()) break;
+                    
+                    for (String line : lines) {
+                        if (shouldStop.get()) break;
+                        
+                        String trimmed = line.trim();
+                        if (trimmed.isEmpty()) continue;
+                        
+                        String cmd = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
+                        final String finalCmd = cmd;
+                        
+                        mc.execute(() -> {
+                            if (mc.player != null) {
+                                mc.player.sendChatMessage(finalCmd);
+                            }
+                        });
+                        
+                        try {
+                            Thread.sleep(delay);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
+                VSBaseMod.LOGGER.info("Macro {} completed {} loop(s)", tabId, loopCount);
+            } finally {
+                isRunning = false;
+            }
+        }, "MacroExecutor-" + tabId);
+        executionThread.start();
+    }
     
-    private void updateSettingsFromFields() {
-        try {
-            delay = Integer.parseInt(delayField.getText());
-            if (delay < 0) delay = 0;
-            if (delay > 10000) delay = 10000;
-        } catch (NumberFormatException e) { delay = 50; }
-        
-        try {
-            loopCount = Integer.parseInt(loopField.getText());
-            if (loopCount < 1) loopCount = 1;
-            if (loopCount > 1000) loopCount = 1000;
-        } catch (NumberFormatException e) { loopCount = 1; }
-        
+    public void stopExecution() {
+        shouldStop.set(true);
+        if (executionThread != null) {
+            executionThread.interrupt();
+        }
+    }
+    
+    public boolean isRunning() { return isRunning; }
+    
+    public void updateSettings(int newDelay, int newLoop) {
+        this.delay = newDelay;
+        this.loopCount = newLoop;
         saveSettings();
     }
     
-    protected void saveSettings() {
-        try {
-            java.io.PrintWriter writer = new java.io.PrintWriter(settingsFile);
-            writer.println(delay);
-            writer.println(loopCount);
-            writer.close();
-        } catch (Exception e) {
-            VSBaseMod.LOGGER.error("Failed to save settings for tab {}", tabId, e);
-        }
-    }
-    
-    protected void loadSettings() {
-        try {
-            if (settingsFile.exists()) {
-                Scanner scanner = new Scanner(settingsFile);
-                if (scanner.hasNextInt()) delay = scanner.nextInt();
-                if (scanner.hasNextInt()) loopCount = scanner.nextInt();
-                scanner.close();
-            }
-        } catch (Exception e) {
-            VSBaseMod.LOGGER.error("Failed to load settings for tab {}", tabId, e);
-            delay = 50;
-            loopCount = 1;
-        }
-    }
+    public int getDelay() { return delay; }
+    public int getLoopCount() { return loopCount; }
     
     private void pasteFromClipboard() {
         try {
@@ -428,6 +319,32 @@ public class MacrosTab implements IVSTab {
         }
     }
     
+    protected void saveSettings() {
+        try {
+            java.io.PrintWriter writer = new java.io.PrintWriter(settingsFile);
+            writer.println(delay);
+            writer.println(loopCount);
+            writer.close();
+        } catch (Exception e) {
+            VSBaseMod.LOGGER.error("Failed to save settings for tab {}", tabId, e);
+        }
+    }
+    
+    protected void loadSettings() {
+        try {
+            if (settingsFile.exists()) {
+                Scanner scanner = new Scanner(settingsFile);
+                if (scanner.hasNextInt()) delay = scanner.nextInt();
+                if (scanner.hasNextInt()) loopCount = scanner.nextInt();
+                scanner.close();
+            }
+        } catch (Exception e) {
+            VSBaseMod.LOGGER.error("Failed to load settings for tab {}", tabId, e);
+            delay = 50;
+            loopCount = 1;
+        }
+    }
+    
     protected void copySelection() { 
         if (cursorLine < lines.size()) {
             clipboard = lines.get(cursorLine);
@@ -445,11 +362,5 @@ public class MacrosTab implements IVSTab {
     public void onShow() {}
     
     @Override 
-    public void onHide() {
-        // Cleanup widgets
-        if (parent != null) {
-            if (delayField != null) parent.removeChild(delayField);
-            if (loopField != null) parent.removeChild(loopField);
-        }
-    }
+    public void onHide() {}
 }
