@@ -16,6 +16,6 @@ public class VSBaseMod {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         com.vs.vscombo.common.registry.DeferredRegistry.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(this);
-        LOGGER.info("VS Base initialized. Forge 1.16.5 compatible.");
+        LOGGER.info("VS Base initialized.");
     }
 }
