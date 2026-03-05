@@ -38,6 +38,7 @@ public class VSMainWindow extends Screen {
     private TextFieldWidget loopField;
     private Button stopButton;
     private Button executeButton;
+    private Button clearButton; // FIX: Кнопка Clear
     
     private int currentDelay = 50;
     private int currentLoop = 1;
@@ -111,46 +112,57 @@ public class VSMainWindow extends Screen {
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
         
+        // FIX: Кнопка Clear в левом нижнем углу
+        clearButton = new Button(panelX + 5, bottomY, 60, 20,
+            new StringTextComponent("Clear"), btn -> clearChat());
+        this.addButton(clearButton);
+        
         // Delay label + field
         this.font.drawString(new MatrixStack(), "Delay:", 
-            (float)(contentX + 5), (float)(bottomY + 5), 0xFFAAAAAA);
+            (float)(panelX + 75), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        delayField = new TextFieldWidget(this.font, contentX + 50, bottomY, 50, 18,
+        delayField = new TextFieldWidget(this.font, panelX + 120, bottomY, 50, 18,
             new StringTextComponent("Delay"));
         delayField.setText(String.valueOf(currentDelay));
         delayField.setTextColor(0xFFFFFF);
-        // FIX: В 1.16.5 нет setFilter, используем setMaxStringLength + ручную валидацию
         delayField.setMaxStringLength(5);
         this.children.add(delayField);
         
         // Loop label + field
         this.font.drawString(new MatrixStack(), "Loop:", 
-            (float)(contentX + 110), (float)(bottomY + 5), 0xFFAAAAAA);
+            (float)(panelX + 180), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        loopField = new TextFieldWidget(this.font, contentX + 155, bottomY, 50, 18,
+        loopField = new TextFieldWidget(this.font, panelX + 230, bottomY, 50, 18,
             new StringTextComponent("Loop"));
         loopField.setText(String.valueOf(currentLoop));
         loopField.setTextColor(0xFFFFFF);
         loopField.setMaxStringLength(4);
         this.children.add(loopField);
         
-        // Stop button
-        stopButton = new Button(contentX + 215, bottomY, 60, 20,
+        // FIX: Stop button — всегда активна
+        stopButton = new Button(panelX + 290, bottomY, 60, 20,
             new StringTextComponent("Stop"), btn -> stopMacro());
-        stopButton.active = false;
+        stopButton.active = true; // FIX: Всегда активна
         this.addButton(stopButton);
         
-        // Execute button
+        // FIX: Execute button — всегда активна
         executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
             new StringTextComponent("Execute"), btn -> executeMacro());
+        executeButton.active = true; // FIX: Всегда активна
         this.addButton(executeButton);
+    }
+    
+    // FIX: Метод для очистки чата (F3+D)
+    private void clearChat() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.ingameGUI != null && mc.ingameGUI.getChatGUI() != null) {
+            mc.ingameGUI.getChatGUI().clearChatMessages(true);
+        }
     }
     
     private void stopMacro() {
         if (tabManager.getActiveTab() instanceof MacrosTab) {
             ((MacrosTab) tabManager.getActiveTab()).stopExecution();
-            stopButton.active = false;
-            executeButton.active = true;
         }
     }
     
@@ -158,7 +170,6 @@ public class VSMainWindow extends Screen {
         if (!(tabManager.getActiveTab() instanceof MacrosTab)) return;
         MacrosTab tab = (MacrosTab) tabManager.getActiveTab();
         
-        // Parse and validate input
         try {
             currentDelay = Integer.parseInt(delayField.getText());
             if (currentDelay < 0) currentDelay = 0;
@@ -171,12 +182,8 @@ public class VSMainWindow extends Screen {
             if (currentLoop > 1000) currentLoop = 1000;
         } catch (NumberFormatException e) { currentLoop = 1; }
         
-        // Update tab settings and execute
         tab.updateSettings(currentDelay, currentLoop);
         tab.executeWithSettings(currentDelay, currentLoop);
-        
-        stopButton.active = true;
-        executeButton.active = false;
     }
     
     private void initTabButtons() {
@@ -244,12 +251,11 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        // Validate numeric input for fields
         if (delayField != null && delayField.isFocused()) {
             if (codePoint >= '0' && codePoint <= '9') {
                 return delayField.charTyped(codePoint, modifiers);
             }
-            return true; // Block non-numeric
+            return true;
         }
         if (loopField != null && loopField.isFocused()) {
             if (codePoint >= '0' && codePoint <= '9') {
@@ -287,7 +293,6 @@ public class VSMainWindow extends Screen {
     @Override
     public void onClose() {
         isOpen = false;
-        // Cleanup widgets
         if (delayField != null) this.children.remove(delayField);
         if (loopField != null) this.children.remove(loopField);
         super.onClose();
