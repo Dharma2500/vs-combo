@@ -3,10 +3,10 @@ package com.vs.vscombo.core.gui;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.math.MathHelper;
 
 public class VSMainWindow extends Screen {
     
@@ -19,6 +19,7 @@ public class VSMainWindow extends Screen {
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     
     private TabManager tabManager;
+    private int panelX, panelY, panelW, panelH;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -41,15 +42,15 @@ public class VSMainWindow extends Screen {
     protected void init() {
         int winW = this.width;
         int winH = this.height;
-        int panelW = (int)(winW * SCREEN_RATIO);
-        int panelH = (int)(winH * SCREEN_RATIO);
-        int posX = (winW - panelW) / 2;
-        int posY = (winH - panelH) / 2;
+        panelW = (int)(winW * SCREEN_RATIO);
+        panelH = (int)(winH * SCREEN_RATIO);
+        panelX = (winW - panelW) / 2;
+        panelY = (winH - panelH) / 2;
         
-        this.tabManager.init(posX, posY, panelW, panelH);
+        this.tabManager.init(panelX, panelY, panelW, panelH);
         
         this.addButton(new Button(
-            posX + 5, posY + 25, 100, 20, 
+            panelX + 5, panelY + 25, 100, 20, 
             new StringTextComponent("Macros#1"), 
             btn -> tabManager.switchTab("macros1")
         ));
@@ -57,27 +58,27 @@ public class VSMainWindow extends Screen {
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+        // Dark overlay
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
+        AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
-        int winW = this.width;
-        int winH = this.height;
-        int panelW = (int)(winW * SCREEN_RATIO);
-        int panelH = (int)(winH * SCREEN_RATIO);
-        int posX = (winW - panelW) / 2;
-        int posY = (winH - panelH) / 2;
+        // Panel background
+        AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
+        // Border
+        AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY, 0xFF555555);
+        AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY + panelH, 0xFF555555);
+        AbstractGui.drawVerticalLine(matrixStack, panelX, panelY, panelY + panelH, 0xFF555555);
+        AbstractGui.drawVerticalLine(matrixStack, panelX + panelW, panelY, panelY + panelH, 0xFF555555);
         
-        fill(matrixStack, posX, posY, posX + panelW, posY + panelH, PANEL_COLOR);
-        drawHorizontalLine(matrixStack, posX, posX + panelW, posY, 0xFF555555);
-        drawVerticalLine(matrixStack, posX, posY, posY + panelH, 0xFF555555);
+        // Header
+        this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
+                panelX + 10, panelY + 8, TEXT_COLOR);
         
-        drawString(matrixStack, this.font, "Created by Vitaly_Sokolov", 
-                posX + 10, posY + 8, TEXT_COLOR);
-        
+        // Active tab
         if (this.tabManager.getActiveTab() != null) {
             this.tabManager.getActiveTab().render(matrixStack, mouseX, mouseY, partialTicks, 
-                    posX + 120, posY + 25, panelW - 130, panelH - 35);
+                    panelX + 120, panelY + 25, panelW - 130, panelH - 35);
         }
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
