@@ -46,13 +46,11 @@ public class VSMainWindow extends Screen {
 
     @Override
     protected void init() {
-        // Main panel
         panelW = (int)(this.width * WIDTH_RATIO);
         panelH = (int)(this.height * HEIGHT_RATIO);
         panelX = (this.width - panelW) / 2;
         panelY = (this.height - panelH) / 2;
         
-        // Content area (right side, excluding sidebar)
         contentX = panelX + SIDEBAR_WIDTH;
         contentY = panelY + 25;
         contentW = panelW - SIDEBAR_WIDTH - 10;
@@ -60,7 +58,6 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
-        // FIX: Sidebar button (Macros#1)
         this.addButton(new Button(
             panelX + 5, 
             panelY + 25, 
@@ -70,7 +67,6 @@ public class VSMainWindow extends Screen {
             btn -> tabManager.switchTab("macros1")
         ));
         
-        // Tab-specific buttons (Execute and others)
         if (this.tabManager.getActiveTab() != null) {
             for (Button btn : this.tabManager.getActiveTab().getButtons(
                     contentX, contentY + contentH - 25, contentW, 25)) {
@@ -85,18 +81,18 @@ public class VSMainWindow extends Screen {
         RenderSystem.defaultBlendFunc();
         AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
-        // Main panel
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         drawBorder(matrixStack, panelX, panelY, panelW, panelH, 0xFF555555);
         
-        // Sidebar separator
-        AbstractGui.drawVerticalLine(matrixStack, panelX + SIDEBAR_WIDTH, panelY, panelY + panelH, 0xFF555555);
+        // FIX: Sidebar separator using fill instead of drawVerticalLine
+        AbstractGui.fill(matrixStack, 
+            panelX + SIDEBAR_WIDTH, panelY, 
+            panelX + SIDEBAR_WIDTH + 1, panelY + panelH, 
+            0xFF555555);
         
-        // Header
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
         
-        // Active tab content
         if (this.tabManager.getActiveTab() != null) {
             this.tabManager.getActiveTab().render(matrixStack, mouseX, mouseY, partialTicks, 
                     contentX, contentY, contentW, contentH);
