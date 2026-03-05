@@ -15,14 +15,12 @@ public class VSMainWindow extends Screen {
     private static boolean isOpen = false;
     
     private static final int BG_ALPHA = 200;
-    // FIX: 1.0 = 100% экрана (4x от 25%)
     private static final float SCREEN_RATIO = 1.0f;
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
     
     private TabManager tabManager;
     private int panelX, panelY, panelW, panelH;
-    // FIX: флаг для подавления следующего charTyped
     private static boolean suppressNextChar = false;
 
     private VSMainWindow() {
@@ -39,7 +37,6 @@ public class VSMainWindow extends Screen {
             instance = new VSMainWindow();
             mc.displayGuiScreen(instance);
             isOpen = true;
-            // FIX: подавляем ввод символа 'x' после открытия
             suppressNextChar = true;
         }
     }
@@ -98,8 +95,8 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // FIX: если нажата клавиша открытия — подавляем ввод
-        if (suppressNextChar && (keyCode == GLFW.GLFW_KEY_X || keyCode == GLFW.GLFW_KEY_x)) {
+        // FIX: только GLFW_KEY_X, без несуществующего GLFW_KEY_x
+        if (suppressNextChar && keyCode == GLFW.GLFW_KEY_X) {
             suppressNextChar = false;
             return true;
         }
@@ -113,7 +110,6 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        // FIX: подавляем первый символ после открытия окна
         if (suppressNextChar) {
             suppressNextChar = false;
             return true;
@@ -128,7 +124,6 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // FIX: передача клика в активную вкладку (для позиционирования курсора)
         if (this.tabManager.getActiveTab() != null) {
             if (this.tabManager.getActiveTab().mouseClicked(mouseX, mouseY, button, 
                     panelX + 120, panelY + 25, panelW - 130, panelH - 35)) {
@@ -144,7 +139,6 @@ public class VSMainWindow extends Screen {
         super.onClose();
     }
     
-    // VS Core: Dynamic button re-registration
     public void reinitTabButtons(IVSTab tab, int x, int y, int w, int h) {
         for (Button btn : tab.getButtons(x, y, w, h)) {
             this.addButton(btn);
