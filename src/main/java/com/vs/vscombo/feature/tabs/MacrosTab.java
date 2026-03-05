@@ -3,6 +3,7 @@ package com.vs.vscombo.feature.tabs;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.core.gui.IVSTab;
+import com.vs.vscombo.core.gui.VSMainWindow; // FIX: добавлен импорт
 import com.vs.vscombo.util.VSFileUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
@@ -16,7 +17,7 @@ import java.util.*;
 
 public class MacrosTab implements IVSTab {
     
-    private VSMainWindow parent; // FIX: конкретный тип вместо Screen
+    private VSMainWindow parent;
     private int x, y, width, height;
     
     private final List<String> lines = new ArrayList<>(Collections.singletonList(""));
@@ -36,12 +37,10 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void init(Screen parent, int x, int y, int width, int height) {
-        // FIX: кастуем к VSMainWindow для доступа к protected addButton
         this.parent = (VSMainWindow) parent;
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
         
-        // FIX: addButton вызывается через this.parent, который теперь VSMainWindow
         this.parent.addButton(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
@@ -85,7 +84,6 @@ public class MacrosTab implements IVSTab {
         }
     }
 
-    // FIX: рамка через fill, не через drawHorizontalLine
     private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
         AbstractGui.fill(ms, x, y, x + w, y + 1, color);
         AbstractGui.fill(ms, x, y + h - 1, x + w, y + h, color);
