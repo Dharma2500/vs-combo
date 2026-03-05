@@ -28,7 +28,8 @@ public class VSMainWindow extends Screen {
 
     public static void toggle() {
         Minecraft mc = Minecraft.getInstance();
-        if (isOpen && mc.screen instanceof VSMainWindow) {
+        // FIX: currentScreen вместо screen
+        if (isOpen && mc.currentScreen instanceof VSMainWindow) {
             mc.displayGuiScreen(null);
             isOpen = false;
         } else if (!isOpen) {
@@ -49,6 +50,7 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
+        // FIX: addButton вызывается внутри Screen-подкласса — это разрешено
         this.addButton(new Button(
             panelX + 5, panelY + 25, 100, 20, 
             new StringTextComponent("Macros#1"), 
@@ -64,10 +66,8 @@ public class VSMainWindow extends Screen {
         
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         
-        AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY, 0xFF555555);
-        AbstractGui.drawHorizontalLine(matrixStack, panelX, panelX + panelW, panelY + panelH, 0xFF555555);
-        AbstractGui.drawVerticalLine(matrixStack, panelX, panelY, panelY + panelH, 0xFF555555);
-        AbstractGui.drawVerticalLine(matrixStack, panelX + panelW, panelY, panelY + panelH, 0xFF555555);
+        // FIX: рисуем границы через fill (тонкие прямоугольники)
+        drawBorder(matrixStack, panelX, panelY, panelW, panelH, 0xFF555555);
         
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
@@ -78,6 +78,14 @@ public class VSMainWindow extends Screen {
         }
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
+    }
+    
+    // FIX: вспомогательный метод для рамок
+    private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
+        AbstractGui.fill(ms, x, y, x + w, y + 1, color);           // top
+        AbstractGui.fill(ms, x, y + h - 1, x + w, y + h, color);   // bottom
+        AbstractGui.fill(ms, x, y, x + 1, y + h, color);           // left
+        AbstractGui.fill(ms, x + w - 1, y, x + w, y + h, color);   // right
     }
     
     @Override
