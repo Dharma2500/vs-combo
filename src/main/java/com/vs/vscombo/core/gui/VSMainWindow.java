@@ -14,15 +14,16 @@ public class VSMainWindow extends Screen {
     private static VSMainWindow instance;
     private static boolean isOpen = false;
     
-    // FIX: Пропорции вместо фиксированного размера
-    private static final float WIDTH_RATIO = 0.55f;  // 55% ширины экрана
-    private static final float HEIGHT_RATIO = 0.60f; // 60% высоты экрана
+    private static final float WIDTH_RATIO = 0.55f;
+    private static final float HEIGHT_RATIO = 0.60f;
     private static final int BG_ALPHA = 200;
     private static final int PANEL_COLOR = 0xFF1A1A1A;
     private static final int TEXT_COLOR = 0xFFE0E0E0;
+    private static final int SIDEBAR_WIDTH = 120;
     
     private TabManager tabManager;
     private int panelX, panelY, panelW, panelH;
+    private int contentX, contentY, contentW, contentH;
     private static boolean suppressNextChar = false;
 
     private VSMainWindow() {
@@ -45,23 +46,34 @@ public class VSMainWindow extends Screen {
 
     @Override
     protected void init() {
-        // FIX: Вычисляем размер на основе пропорций экрана
+        // Main panel
         panelW = (int)(this.width * WIDTH_RATIO);
         panelH = (int)(this.height * HEIGHT_RATIO);
         panelX = (this.width - panelW) / 2;
         panelY = (this.height - panelH) / 2;
         
+        // Content area (right side, excluding sidebar)
+        contentX = panelX + SIDEBAR_WIDTH;
+        contentY = panelY + 25;
+        contentW = panelW - SIDEBAR_WIDTH - 10;
+        contentH = panelH - 60;
+        
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
+        // FIX: Sidebar button (Macros#1)
         this.addButton(new Button(
-            panelX + 5, panelY + 25, 100, 20, 
+            panelX + 5, 
+            panelY + 25, 
+            SIDEBAR_WIDTH - 10, 
+            20, 
             new StringTextComponent("Macros#1"), 
             btn -> tabManager.switchTab("macros1")
         ));
         
+        // Tab-specific buttons (Execute and others)
         if (this.tabManager.getActiveTab() != null) {
             for (Button btn : this.tabManager.getActiveTab().getButtons(
-                    panelX + 120, panelY + 25, panelW - 130, panelH - 35)) {
+                    contentX, contentY + contentH - 25, contentW, 25)) {
                 this.addButton(btn);
             }
         }
@@ -73,15 +85,21 @@ public class VSMainWindow extends Screen {
         RenderSystem.defaultBlendFunc();
         AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
+        // Main panel
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         drawBorder(matrixStack, panelX, panelY, panelW, panelH, 0xFF555555);
         
+        // Sidebar separator
+        AbstractGui.drawVerticalLine(matrixStack, panelX + SIDEBAR_WIDTH, panelY, panelY + panelH, 0xFF555555);
+        
+        // Header
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
         
+        // Active tab content
         if (this.tabManager.getActiveTab() != null) {
             this.tabManager.getActiveTab().render(matrixStack, mouseX, mouseY, partialTicks, 
-                    panelX + 120, panelY + 25, panelW - 130, panelH - 35);
+                    contentX, contentY, contentW, contentH);
         }
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
@@ -126,7 +144,7 @@ public class VSMainWindow extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.tabManager.getActiveTab() != null) {
             if (this.tabManager.getActiveTab().mouseClicked(mouseX, mouseY, button, 
-                    panelX + 120, panelY + 25, panelW - 130, panelH - 35)) {
+                    contentX, contentY, contentW, contentH)) {
                 return true;
             }
         }
@@ -144,4 +162,9 @@ public class VSMainWindow extends Screen {
             this.addButton(btn);
         }
     }
+    
+    public int getContentX() { return contentX; }
+    public int getContentY() { return contentY; }
+    public int getContentW() { return contentW; }
+    public int getContentH() { return contentH; }
 }
