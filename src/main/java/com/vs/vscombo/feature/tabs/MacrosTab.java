@@ -191,19 +191,37 @@ public class MacrosTab implements IVSTab {
 
     private void executeCommands() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.getConnection() == null) {
-            VSBaseMod.LOGGER.warn("Cannot execute commands: player or connection is null");
+        if (mc.player == null) {
+            VSBaseMod.LOGGER.warn("Cannot execute: player is null");
             return;
         }
+        if (mc.getConnection() == null) {
+            VSBaseMod.LOGGER.warn("Cannot execute: connection is null");
+            return;
+        }
+        
+        int sentCount = 0;
         for (String line : lines) {
             String trimmed = line.trim();
-            if (!trimmed.isEmpty()) {
-                String cmd = trimmed.startsWith("/") ? trimmed : "/" + trimmed;
-                mc.player.sendChatMessage(cmd);
-                try { Thread.sleep(50); } catch (InterruptedException e) {}
+            if (trimmed.isEmpty()) continue;
+            
+            String cmd = trimmed;
+            if (!cmd.startsWith("/")) {
+                cmd = "/" + cmd;
+            }
+            
+            mc.player.sendChatMessage(cmd);
+            sentCount++;
+            
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
-        VSBaseMod.LOGGER.info("Executed {} commands from Macros#1", lines.size());
+        
+        VSBaseMod.LOGGER.info("Executed {} commands from Macros#1", sentCount);
     }
     
     private void saveContent() { VSFileUtil.saveString(saveFile, String.join("\n", lines)); }
