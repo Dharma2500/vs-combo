@@ -1,6 +1,10 @@
 package com.vs.vscombo.core.gui;
 
 import com.vs.vscombo.feature.tabs.MacrosTab;
+import com.vs.vscombo.feature.tabs.MacrosTab2;
+import com.vs.vscombo.feature.tabs.MacrosTab3;
+import com.vs.vscombo.feature.tabs.MacrosTab4;
+import com.vs.vscombo.feature.tabs.MacrosTab5;
 import net.minecraft.client.gui.screen.Screen;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +19,11 @@ public class TabManager {
 
     public TabManager(VSMainWindow parent) {
         this.parent = parent;
-        registerTab("macros1", new MacrosTab());
+        registerTab("macros1", new MacrosTab("1"));
+        registerTab("macros2", new MacrosTab2());
+        registerTab("macros3", new MacrosTab3());
+        registerTab("macros4", new MacrosTab4());
+        registerTab("macros5", new MacrosTab5());
     }
     
     public void registerTab(String id, IVSTab tab) {
@@ -40,7 +48,6 @@ public class TabManager {
             activeTab = tab;
             activeTab.onShow();
             activeTab.init(parent, contentX, contentY, contentW, contentH);
-            // FIX: Reinit buttons through parent
             parent.reinitTabButtons();
         }
     }
