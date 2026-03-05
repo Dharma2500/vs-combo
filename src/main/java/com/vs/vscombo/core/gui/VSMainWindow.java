@@ -54,7 +54,6 @@ public class VSMainWindow extends Screen {
         
         contentX = panelX + SIDEBAR_WIDTH;
         contentY = panelY + 25;
-        // FIX: Content height excludes execute button area
         contentW = panelW - SIDEBAR_WIDTH - 10;
         contentH = panelH - 60 - EXECUTE_BUTTON_HEIGHT;
         
@@ -83,13 +82,16 @@ public class VSMainWindow extends Screen {
         RenderSystem.defaultBlendFunc();
         AbstractGui.fill(matrixStack, 0, 0, this.width, this.height, (BG_ALPHA << 24) | 0x000000);
         
+        // Main panel background
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
-        drawBorder(matrixStack, panelX, panelY, panelW, panelH, 0xFF555555);
         
-        AbstractGui.fill(matrixStack, 
-            panelX + SIDEBAR_WIDTH, panelY, 
-            panelX + SIDEBAR_WIDTH + 1, panelY + panelH, 
-            0xFF555555);
+        // FIX: Only top and bottom borders (no vertical lines)
+        AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
+        AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
+        
+        // Horizontal separator above Execute button area
+        int separatorY = panelY + panelH - EXECUTE_BUTTON_HEIGHT - 5;
+        AbstractGui.fill(matrixStack, panelX, separatorY, panelX + panelW, separatorY + 1, 0xFF555555);
         
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
@@ -100,13 +102,6 @@ public class VSMainWindow extends Screen {
         }
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
-    }
-    
-    private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
-        AbstractGui.fill(ms, x, y, x + w, y + 1, color);
-        AbstractGui.fill(ms, x, y + h - 1, x + w, y + h, color);
-        AbstractGui.fill(ms, x, y, x + 1, y + h, color);
-        AbstractGui.fill(ms, x + w - 1, y, x + w, y + h, color);
     }
     
     @Override
