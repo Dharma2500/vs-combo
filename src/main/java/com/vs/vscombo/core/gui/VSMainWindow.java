@@ -35,10 +35,12 @@ public class VSMainWindow extends Screen {
     
     private final List<Button> tabButtons = new ArrayList<>();
     private TextFieldWidget delayField;
-    private TextFieldWidget timerField;
+    private TextFieldWidget loopField;
+    private Button stopButton;
+    private Button executeButton;
     
-    public static int lineDelay = 50;
-    public static int executionTimer = 0;
+    private int currentDelay = 50;
+    private int currentLoop = 1;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -72,81 +74,109 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
+        // Sidebar buttons
         int buttonY = panelY + 25;
         int buttonSpacing = 25;
-        
         this.addButton(new Button(panelX + 5, buttonY, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#1"), btn -> tabManager.switchTab("macros1")));
+            new StringTextComponent("Macros#1"), btn -> switchTab("macros1")));
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#2"), btn -> tabManager.switchTab("macros2")));
+            new StringTextComponent("Macros#2"), btn -> switchTab("macros2")));
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 2, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#3"), btn -> tabManager.switchTab("macros3")));
+            new StringTextComponent("Macros#3"), btn -> switchTab("macros3")));
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 3, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#4"), btn -> tabManager.switchTab("macros4")));
+            new StringTextComponent("Macros#4"), btn -> switchTab("macros4")));
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 4, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("Macros#5"), btn -> tabManager.switchTab("macros5")));
+            new StringTextComponent("Macros#5"), btn -> switchTab("macros5")));
         
         initBottomSection();
         initTabButtons();
+        syncFieldsWithTab();
+    }
+    
+    private void switchTab(String id) {
+        tabManager.switchTab(id);
+        syncFieldsWithTab();
+    }
+    
+    private void syncFieldsWithTab() {
+        if (tabManager.getActiveTab() instanceof MacrosTab) {
+            MacrosTab tab = (MacrosTab) tabManager.getActiveTab();
+            currentDelay = tab.getDelay();
+            currentLoop = tab.getLoopCount();
+            if (delayField != null) delayField.setText(String.valueOf(currentDelay));
+            if (loopField != null) loopField.setText(String.valueOf(currentLoop));
+        }
     }
     
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
         
-        this.font.drawString(new MatrixStack(), "Delay (ms):", 
+        // Delay label + field
+        this.font.drawString(new MatrixStack(), "Delay:", 
             (float)(contentX + 5), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        delayField = new TextFieldWidget(this.font, contentX + 70, bottomY, 60, 18,
+        delayField = new TextFieldWidget(this.font, contentX + 50, bottomY, 50, 18,
             new StringTextComponent("Delay"));
-        delayField.setText(String.valueOf(lineDelay));
+        delayField.setText(String.valueOf(currentDelay));
         delayField.setTextColor(0xFFFFFF);
-        delayField.setResponder(this::onDelayChanged);
-        // FIX: В 1.16.5 добавляем виджет напрямую в children
+        // FIX: В 1.16.5 нет setFilter, используем setMaxStringLength + ручную валидацию
+        delayField.setMaxStringLength(5);
         this.children.add(delayField);
         
-        this.font.drawString(new MatrixStack(), "Timer (sec):", 
-            (float)(contentX + 145), (float)(bottomY + 5), 0xFFAAAAAA);
+        // Loop label + field
+        this.font.drawString(new MatrixStack(), "Loop:", 
+            (float)(contentX + 110), (float)(bottomY + 5), 0xFFAAAAAA);
         
-        timerField = new TextFieldWidget(this.font, contentX + 225, bottomY, 60, 18,
-            new StringTextComponent("Timer"));
-        timerField.setText(String.valueOf(executionTimer));
-        timerField.setTextColor(0xFFFFFF);
-        timerField.setResponder(this::onTimerChanged);
-        // FIX: В 1.16.5 добавляем виджет напрямую в children
-        this.children.add(timerField);
+        loopField = new TextFieldWidget(this.font, contentX + 155, bottomY, 50, 18,
+            new StringTextComponent("Loop"));
+        loopField.setText(String.valueOf(currentLoop));
+        loopField.setTextColor(0xFFFFFF);
+        loopField.setMaxStringLength(4);
+        this.children.add(loopField);
         
-        this.addButton(new Button(
-            panelX + panelW - 95, bottomY,
-            80, 20,
-            new StringTextComponent("Execute"),
-            btn -> executeActiveTab()
-        ));
+        // Stop button
+        stopButton = new Button(contentX + 215, bottomY, 60, 20,
+            new StringTextComponent("Stop"), btn -> stopMacro());
+        stopButton.active = false;
+        this.addButton(stopButton);
+        
+        // Execute button
+        executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
+            new StringTextComponent("Execute"), btn -> executeMacro());
+        this.addButton(executeButton);
     }
     
-    private void onDelayChanged(String value) {
+    private void stopMacro() {
+        if (tabManager.getActiveTab() instanceof MacrosTab) {
+            ((MacrosTab) tabManager.getActiveTab()).stopExecution();
+            stopButton.active = false;
+            executeButton.active = true;
+        }
+    }
+    
+    private void executeMacro() {
+        if (!(tabManager.getActiveTab() instanceof MacrosTab)) return;
+        MacrosTab tab = (MacrosTab) tabManager.getActiveTab();
+        
+        // Parse and validate input
         try {
-            lineDelay = Integer.parseInt(value);
-            if (lineDelay < 0) lineDelay = 0;
-            if (lineDelay > 5000) lineDelay = 5000;
-        } catch (NumberFormatException e) {
-            lineDelay = 50;
-        }
-    }
-    
-    private void onTimerChanged(String value) {
+            currentDelay = Integer.parseInt(delayField.getText());
+            if (currentDelay < 0) currentDelay = 0;
+            if (currentDelay > 10000) currentDelay = 10000;
+        } catch (NumberFormatException e) { currentDelay = 50; }
+        
         try {
-            executionTimer = Integer.parseInt(value);
-            if (executionTimer < 0) executionTimer = 0;
-            if (executionTimer > 3600) executionTimer = 3600;
-        } catch (NumberFormatException e) {
-            executionTimer = 0;
-        }
-    }
-    
-    private void executeActiveTab() {
-        if (this.tabManager.getActiveTab() instanceof MacrosTab) {
-            ((MacrosTab) this.tabManager.getActiveTab()).executeWithSettings();
-        }
+            currentLoop = Integer.parseInt(loopField.getText());
+            if (currentLoop < 1) currentLoop = 1;
+            if (currentLoop > 1000) currentLoop = 1000;
+        } catch (NumberFormatException e) { currentLoop = 1; }
+        
+        // Update tab settings and execute
+        tab.updateSettings(currentDelay, currentLoop);
+        tab.executeWithSettings(currentDelay, currentLoop);
+        
+        stopButton.active = true;
+        executeButton.active = false;
     }
     
     private void initTabButtons() {
@@ -180,7 +210,7 @@ public class VSMainWindow extends Screen {
         }
         
         if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
-        if (timerField != null) timerField.render(matrixStack, mouseX, mouseY, partialTicks);
+        if (loopField != null) loopField.render(matrixStack, mouseX, mouseY, partialTicks);
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
     }
@@ -195,7 +225,7 @@ public class VSMainWindow extends Screen {
         if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
-        if (timerField != null && timerField.keyPressed(keyCode, scanCode, modifiers)) {
+        if (loopField != null && loopField.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         
@@ -214,10 +244,17 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (delayField != null && delayField.charTyped(codePoint, modifiers)) {
-            return true;
+        // Validate numeric input for fields
+        if (delayField != null && delayField.isFocused()) {
+            if (codePoint >= '0' && codePoint <= '9') {
+                return delayField.charTyped(codePoint, modifiers);
+            }
+            return true; // Block non-numeric
         }
-        if (timerField != null && timerField.charTyped(codePoint, modifiers)) {
+        if (loopField != null && loopField.isFocused()) {
+            if (codePoint >= '0' && codePoint <= '9') {
+                return loopField.charTyped(codePoint, modifiers);
+            }
             return true;
         }
         
@@ -234,7 +271,7 @@ public class VSMainWindow extends Screen {
         if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (timerField != null && timerField.mouseClicked(mouseX, mouseY, button)) {
+        if (loopField != null && loopField.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         
@@ -250,6 +287,9 @@ public class VSMainWindow extends Screen {
     @Override
     public void onClose() {
         isOpen = false;
+        // Cleanup widgets
+        if (delayField != null) this.children.remove(delayField);
+        if (loopField != null) this.children.remove(loopField);
         super.onClose();
     }
     
