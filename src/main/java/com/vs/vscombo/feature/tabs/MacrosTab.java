@@ -5,6 +5,7 @@ import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.core.gui.IVSTab;
 import com.vs.vscombo.util.VSFileUtil;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
@@ -22,13 +23,13 @@ public class MacrosTab implements IVSTab {
     private int cursorLine = 0, cursorCol = 0;
     private boolean cursorVisible = true;
     private long lastCursorToggle = 0;
-    
     private int scrollX = 0, scrollY = 0;
     
     private final File saveFile;
+    private static String clipboard = "";
 
     public MacrosTab() {
-        File configDir = new File(Minecraft.getInstance().mcDataDir, "config/vscombo");
+        File configDir = new File(Minecraft.getInstance().gameDir, "config/vscombo");
         if (!configDir.exists()) configDir.mkdirs();
         this.saveFile = new File(configDir, "macros1.dat");
     }
@@ -48,9 +49,10 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void render(MatrixStack ms, int mouseX, int mouseY, float pt, int x, int y, int w, int h) {
-        Screen.fill(ms, x, y, x + w, y + h, 0xFF252525);
+        AbstractGui.fill(ms, x, y, x + w, y + h, 0xFF252525);
         drawBorder(ms, x, y, x + w, y + h, 0xFF444444);
         
+        // Cursor blink
         long now = System.currentTimeMillis();
         if (now - lastCursorToggle > 500) {
             cursorVisible = !cursorVisible;
@@ -73,20 +75,21 @@ public class MacrosTab implements IVSTab {
             int drawY = y + i * lineHeight;
             mc.fontRenderer.drawString(ms, display, x + 2, drawY, 0xFFCCCCCC);
             
+            // Cursor
             if (lineIdx == cursorLine && cursorVisible) {
                 int cx = x + 2 + (cursorCol - scrollX) * 6;
                 if (cx >= x + 2 && cx < x + w) {
-                    Screen.fill(ms, cx, drawY, cx + 1, drawY + lineHeight, 0xFFFFFFFF);
+                    AbstractGui.fill(ms, cx, drawY, cx + 1, drawY + lineHeight, 0xFFFFFFFF);
                 }
             }
         }
     }
 
     private void drawBorder(MatrixStack ms, int x1, int y1, int x2, int y2, int color) {
-        Screen.drawHorizontalLine(ms, x1, x2, y1, color);
-        Screen.drawHorizontalLine(ms, x1, x2, y2, color);
-        Screen.drawVerticalLine(ms, x1, y1, y2, color);
-        Screen.drawVerticalLine(ms, x2, y1, y2, color);
+        AbstractGui.drawHorizontalLine(ms, x1, x2, y1, color);
+        AbstractGui.drawHorizontalLine(ms, x1, x2, y2, color);
+        AbstractGui.drawVerticalLine(ms, x1, y1, y2, color);
+        AbstractGui.drawVerticalLine(ms, x2, y1, y2, color);
     }
 
     @Override
@@ -152,9 +155,9 @@ public class MacrosTab implements IVSTab {
         int visibleCols = width / 6;
         
         while (cursorLine - scrollY >= visibleLines) scrollY++;
-        while (cursorLine < scrollY) scrollY--;
+        while (cursorLine < scrollY) scrollY = Math.max(0, scrollY - 1);
         while (cursorCol - scrollX >= visibleCols) scrollX++;
-        while (cursorCol < scrollX) scrollX--;
+        while (cursorCol < scrollX) scrollX = Math.max(0, scrollX - 1);
     }
     
     private void adjustCol() {
@@ -181,16 +184,13 @@ public class MacrosTab implements IVSTab {
         String data = VSFileUtil.loadString(saveFile);
         if (data != null) {
             lines.clear();
-            Collections.addAll(lines, data.split("\n"));
+            Collections.addAll(lines, data.split("\n", -1));
             if (lines.isEmpty()) lines.add("");
         }
     }
     
-    private static String clipboard = "";
     private void copySelection() {
-        if (cursorLine < lines.size()) {
-            clipboard = lines.get(cursorLine);
-        }
+        if (cursorLine < lines.size()) clipboard = lines.get(cursorLine);
     }
     private void pasteClipboard() {
         if (!clipboard.isEmpty()) {
