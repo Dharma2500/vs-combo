@@ -48,10 +48,10 @@ public class MacrosTab implements IVSTab {
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
-        // FIX: Execute button at the bottom
+        // FIX: Execute button at the bottom (below text area)
         tabButtons.add(new Button(
             x + width - 85, 
-            y, 
+            y + height + 5,  // FIX: positioned below the text area
             80, 
             20,
             new StringTextComponent("Execute"),
