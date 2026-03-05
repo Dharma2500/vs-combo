@@ -30,7 +30,6 @@ public class VSMainWindow extends Screen {
     private int contentX, contentY, contentW, contentH;
     private static boolean suppressNextChar = false;
     
-    // FIX: Track tab-specific buttons for proper cleanup
     private final List<Button> tabButtons = new ArrayList<>();
 
     private VSMainWindow() {
@@ -65,29 +64,50 @@ public class VSMainWindow extends Screen {
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
-        // Sidebar button (persistent)
+        // FIX: All 5 sidebar buttons
+        int buttonY = panelY + 25;
+        int buttonSpacing = 25;
+        
         this.addButton(new Button(
-            panelX + 5, 
-            panelY + 25, 
-            SIDEBAR_WIDTH - 10, 
-            20, 
-            new StringTextComponent("Macros#1"), 
+            panelX + 5, buttonY, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#1"),
             btn -> tabManager.switchTab("macros1")
         ));
         
-        // FIX: Initialize tab buttons once
+        this.addButton(new Button(
+            panelX + 5, buttonY + buttonSpacing, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#2"),
+            btn -> tabManager.switchTab("macros2")
+        ));
+        
+        this.addButton(new Button(
+            panelX + 5, buttonY + buttonSpacing * 2, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#3"),
+            btn -> tabManager.switchTab("macros3")
+        ));
+        
+        this.addButton(new Button(
+            panelX + 5, buttonY + buttonSpacing * 3, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#4"),
+            btn -> tabManager.switchTab("macros4")
+        ));
+        
+        this.addButton(new Button(
+            panelX + 5, buttonY + buttonSpacing * 4, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Macros#5"),
+            btn -> tabManager.switchTab("macros5")
+        ));
+        
         initTabButtons();
     }
     
     private void initTabButtons() {
-        // FIX: Remove old tab buttons first
         for (Button btn : tabButtons) {
             this.children.remove(btn);
             this.buttons.remove(btn);
         }
         tabButtons.clear();
         
-        // Add new tab buttons
         if (this.tabManager.getActiveTab() != null) {
             List<Button> newButtons = this.tabManager.getActiveTab().getButtons(
                     contentX, contentY + contentH, contentW, EXECUTE_BUTTON_HEIGHT);
@@ -106,11 +126,9 @@ public class VSMainWindow extends Screen {
         
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + panelH, PANEL_COLOR);
         
-        // Horizontal borders only
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        // Separator above Execute
         int separatorY = panelY + panelH - EXECUTE_BUTTON_HEIGHT - 5;
         AbstractGui.fill(matrixStack, panelX, separatorY, panelX + panelW, separatorY + 1, 0xFF555555);
         
@@ -170,7 +188,6 @@ public class VSMainWindow extends Screen {
         super.onClose();
     }
     
-    // FIX: Proper button lifecycle management
     public void reinitTabButtons() {
         initTabButtons();
     }
