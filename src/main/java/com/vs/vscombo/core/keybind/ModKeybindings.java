@@ -11,8 +11,7 @@ import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
-
-import java.util.Optional;
+import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT)
 public class ModKeybindings {
@@ -22,7 +21,7 @@ public class ModKeybindings {
             KeyConflictContext.IN_GAME,
             KeyModifier.NONE,
             InputMappings.Type.KEYSYM,
-            InputMappings.getKey("X").getKeyCode(), // Default: X
+            GLFW.GLFW_KEY_X,
             "Vitaly_Sokolov Universe"
     );
 
@@ -33,7 +32,7 @@ public class ModKeybindings {
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (OPEN_VS_MENU.consumeClick()) {
+        if (OPEN_VS_MENU.isPressed()) {
             VSMainWindow.toggle();
         }
     }
