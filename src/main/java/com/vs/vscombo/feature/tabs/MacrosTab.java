@@ -30,7 +30,6 @@ public class MacrosTab implements IVSTab {
     
     protected static String clipboard = "";
     
-    // Per-tab settings
     protected int delay = 50;
     protected int loopCount = 1;
     protected boolean isRunning = false;
@@ -83,7 +82,7 @@ public class MacrosTab implements IVSTab {
             int drawY = y + i * lineHeight;
             mc.fontRenderer.drawString(ms, display, (float)(x + 2), (float)drawY, 0xFFCCCCCC);
             
-            // FIX: Корректное отображение курсора
+            // FIX: Корректное отображение курсора — сразу после символа
             if (lineIdx == cursorLine && cursorVisible) {
                 int cursorPixelX = x + 2 + ((cursorCol - scrollX) * 6);
                 if (cursorPixelX >= x + 2 && cursorPixelX < x + w) {
@@ -208,7 +207,6 @@ public class MacrosTab implements IVSTab {
         if (cursorCol > line.length()) cursorCol = line.length();
     }
 
-    // FIX: Публичный метод для вызова из VSMainWindow
     public void executeWithSettings(int delay, int loopCount) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.getConnection() == null) {
