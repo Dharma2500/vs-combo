@@ -27,8 +27,6 @@ public class MacrosTab implements IVSTab {
     
     private final File saveFile;
     private static String clipboard = "";
-    
-    // Кнопки создаются здесь, но добавляются в VSMainWindow
     private final List<Button> tabButtons = new ArrayList<>();
 
     public MacrosTab() {
@@ -42,13 +40,11 @@ public class MacrosTab implements IVSTab {
         this.parent = parent;
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
-        // Кнопки создаются в getButtons(), не здесь
     }
 
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
-        // Execute button (bottom right)
         tabButtons.add(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
@@ -91,6 +87,36 @@ public class MacrosTab implements IVSTab {
                 }
             }
         }
+    }
+
+    // FIX: обработка клика мыши для позиционирования курсора
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button, int contentX, int contentY, int contentW, int contentH) {
+        if (mouseX < contentX || mouseX >= contentX + contentW || 
+            mouseY < contentY || mouseY >= contentY + contentH) {
+            return false;
+        }
+        
+        Minecraft mc = Minecraft.getInstance();
+        int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
+        int charWidth = 6; // approximate
+        
+        // Вычисляем линию
+        int clickedLine = scrollY + (int)((mouseY - contentY) / lineHeight);
+        if (clickedLine < 0) clickedLine = 0;
+        if (clickedLine >= lines.size()) clickedLine = lines.size() - 1;
+        
+        // Вычисляем колонку
+        String line = lines.get(clickedLine);
+        int clickedCol = scrollX + (int)((mouseX - contentX - 2) / charWidth);
+        if (clickedCol < 0) clickedCol = 0;
+        if (clickedCol > line.length()) clickedCol = line.length();
+        
+        cursorLine = clickedLine;
+        cursorCol = clickedCol;
+        scrollCursor();
+        saveContent();
+        return true;
     }
 
     private void drawBorder(MatrixStack ms, int x, int y, int w, int h, int color) {
