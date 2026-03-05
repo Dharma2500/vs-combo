@@ -18,23 +18,20 @@ public class MacrosTab implements IVSTab {
     private Screen parent;
     private int x, y, width, height;
     
-    // Editor State
     private final List<String> lines = new ArrayList<>(Collections.singletonList(""));
     private int cursorLine = 0, cursorCol = 0;
     private boolean cursorVisible = true;
     private long lastCursorToggle = 0;
     
-    // Scroll State
     private int scrollX = 0, scrollY = 0;
     
-    // Selection (Simple)
-    private int selStart = -1, selEnd = -1;
-    
-    // Clipboard
-    private static String clipboard = "";
-    
-    // Persistence
-    private final File saveFile = new File(Minecraft.getInstance().gameDir, "config/vscombo/macros1.dat");
+    private final File saveFile;
+
+    public MacrosTab() {
+        File configDir = new File(Minecraft.getInstance().mcDataDir, "config/vscombo");
+        if (!configDir.exists()) configDir.mkdirs();
+        this.saveFile = new File(configDir, "macros1.dat");
+    }
 
     @Override
     public void init(Screen parent, int x, int y, int width, int height) {
@@ -42,7 +39,6 @@ public class MacrosTab implements IVSTab {
         this.x = x; this.y = y; this.width = width; this.height = height;
         loadContent();
         
-        // Execute Button (Bottom Right)
         parent.addButton(new Button(
             x + width - 85, y + height - 25, 80, 20,
             new StringTextComponent("Execute"),
@@ -52,22 +48,19 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public void render(MatrixStack ms, int mouseX, int mouseY, float pt, int x, int y, int w, int h) {
-        // Background
-        fill(ms, x, y, x + w, y + h, 0xFF252525);
+        Screen.fill(ms, x, y, x + w, y + h, 0xFF252525);
         drawBorder(ms, x, y, x + w, y + h, 0xFF444444);
         
-        // Cursor Blink Logic
         long now = System.currentTimeMillis();
         if (now - lastCursorToggle > 500) {
             cursorVisible = !cursorVisible;
             lastCursorToggle = now;
         }
         
-        // Render Text
         Minecraft mc = Minecraft.getInstance();
         int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
         int visibleLines = h / lineHeight;
-        int visibleCols = w / 6; // Approx char width
+        int visibleCols = w / 6;
         
         for (int i = 0; i < visibleLines; i++) {
             int lineIdx = scrollY + i;
@@ -80,19 +73,24 @@ public class MacrosTab implements IVSTab {
             int drawY = y + i * lineHeight;
             mc.fontRenderer.drawString(ms, display, x + 2, drawY, 0xFFCCCCCC);
             
-            // Render Cursor
             if (lineIdx == cursorLine && cursorVisible) {
                 int cx = x + 2 + (cursorCol - scrollX) * 6;
                 if (cx >= x + 2 && cx < x + w) {
-                    drawVerticalLine(ms, cx, drawY, drawY + lineHeight, 0xFFFFFFFF);
+                    Screen.fill(ms, cx, drawY, cx + 1, drawY + lineHeight, 0xFFFFFFFF);
                 }
             }
         }
     }
 
+    private void drawBorder(MatrixStack ms, int x1, int y1, int x2, int y2, int color) {
+        Screen.drawHorizontalLine(ms, x1, x2, y1, color);
+        Screen.drawHorizontalLine(ms, x1, x2, y2, color);
+        Screen.drawVerticalLine(ms, x1, y1, y2, color);
+        Screen.drawVerticalLine(ms, x2, y1, y2, color);
+    }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Navigation & Editing
         if (keyCode == GLFW.GLFW_KEY_UP && cursorLine > 0) {
             cursorLine--; adjustCol(); saveContent(); return true;
         }
@@ -127,8 +125,7 @@ public class MacrosTab implements IVSTab {
                 cursorLine--; scrollCursor(); saveContent(); return true;
             }
         }
-        // Clipboard Ctrl+C/V/X
-        boolean ctrl = (modifiers & 2) != 0; // GLFW_MOD_CONTROL
+        boolean ctrl = (modifiers & 2) != 0;
         if (ctrl) {
             if (keyCode == GLFW.GLFW_KEY_C) { copySelection(); return true; }
             if (keyCode == GLFW.GLFW_KEY_V) { pasteClipboard(); saveContent(); return true; }
@@ -139,20 +136,25 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        // Filter control chars
         if (codePoint < 32) return false;
-        
         String line = lines.get(cursorLine);
         lines.set(cursorLine, line.substring(0, cursorCol) + codePoint + line.substring(cursorCol));
         cursorCol++;
         scrollCursor();
-        saveContent(); // Auto-save per char
+        saveContent();
         return true;
     }
     
     private void scrollCursor() {
-        // Auto-scroll logic to keep cursor visible
-        // (Simplified for brevity)
+        Minecraft mc = Minecraft.getInstance();
+        int lineHeight = mc.fontRenderer.FONT_HEIGHT + 2;
+        int visibleLines = height / lineHeight;
+        int visibleCols = width / 6;
+        
+        while (cursorLine - scrollY >= visibleLines) scrollY++;
+        while (cursorLine < scrollY) scrollY--;
+        while (cursorCol - scrollX >= visibleCols) scrollX++;
+        while (cursorCol < scrollX) scrollX--;
     }
     
     private void adjustCol() {
@@ -163,7 +165,6 @@ public class MacrosTab implements IVSTab {
     private void executeCommands() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.getConnection() == null) return;
-        
         for (String line : lines) {
             String cmd = line.trim();
             if (!cmd.isEmpty() && cmd.startsWith("/")) {
@@ -172,7 +173,6 @@ public class MacrosTab implements IVSTab {
         }
     }
     
-    // --- Persistence ---
     private void saveContent() {
         VSFileUtil.saveString(saveFile, String.join("\n", lines));
     }
@@ -186,8 +186,12 @@ public class MacrosTab implements IVSTab {
         }
     }
     
-    // --- Clipboard Helpers ---
-    private void copySelection() { /* Implement selection logic */ }
+    private static String clipboard = "";
+    private void copySelection() {
+        if (cursorLine < lines.size()) {
+            clipboard = lines.get(cursorLine);
+        }
+    }
     private void pasteClipboard() {
         if (!clipboard.isEmpty()) {
             String line = lines.get(cursorLine);
@@ -195,7 +199,7 @@ public class MacrosTab implements IVSTab {
             cursorCol += clipboard.length();
         }
     }
-    private void cutSelection() { copySelection(); /* remove selected */ }
+    private void cutSelection() { copySelection(); }
 
     @Override public void onShow() {}
     @Override public void onHide() {}
