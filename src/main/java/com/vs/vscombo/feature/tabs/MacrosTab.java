@@ -3,6 +3,7 @@ package com.vs.vscombo.feature.tabs;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.core.gui.IVSTab;
+import com.vs.vscombo.core.gui.VSMainWindow;
 import com.vs.vscombo.util.VSFileUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
@@ -10,6 +11,8 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.system.Platform;
 
 import java.io.File;
 import java.util.*;
@@ -50,14 +53,6 @@ public class MacrosTab implements IVSTab {
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
-        tabButtons.add(new Button(
-            x + width - 85, 
-            y, 
-            80, 
-            20,
-            new StringTextComponent("Execute"),
-            btn -> executeCommands()
-        ));
         return tabButtons;
     }
 
@@ -133,6 +128,15 @@ public class MacrosTab implements IVSTab {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        boolean ctrl = (modifiers & 2) != 0;
+        
+        // FIX: Ctrl+V для вставки из буфера обмена Windows
+        if (ctrl && keyCode == GLFW.GLFW_KEY_V) {
+            pasteFromClipboard();
+            saveContent();
+            return true;
+        }
+        
         if (keyCode == GLFW.GLFW_KEY_UP && cursorLine > 0) { cursorLine--; adjustCol(); saveContent(); return true; }
         if (keyCode == GLFW.GLFW_KEY_DOWN && cursorLine < lines.size() - 1) { cursorLine++; adjustCol(); saveContent(); return true; }
         if (keyCode == GLFW.GLFW_KEY_LEFT && cursorCol > 0) { cursorCol--; scrollCursor(); saveContent(); return true; }
@@ -161,10 +165,8 @@ public class MacrosTab implements IVSTab {
                 cursorLine--; scrollCursor(); saveContent(); return true;
             }
         }
-        boolean ctrl = (modifiers & 2) != 0;
         if (ctrl) {
             if (keyCode == GLFW.GLFW_KEY_C) { copySelection(); return true; }
-            if (keyCode == GLFW.GLFW_KEY_V) { pasteClipboard(); saveContent(); return true; }
             if (keyCode == GLFW.GLFW_KEY_X) { cutSelection(); saveContent(); return true; }
         }
         return false;
@@ -197,7 +199,7 @@ public class MacrosTab implements IVSTab {
         if (cursorCol > line.length()) cursorCol = line.length();
     }
 
-    protected void executeCommands() {
+    public void executeWithSettings() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             VSBaseMod.LOGGER.warn("Cannot execute: player is null");
@@ -208,28 +210,78 @@ public class MacrosTab implements IVSTab {
             return;
         }
         
-        int sentCount = 0;
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) continue;
-            
-            String cmd = trimmed;
-            if (!cmd.startsWith("/")) {
-                cmd = "/" + cmd;
-            }
-            
-            mc.player.sendChatMessage(cmd);
-            sentCount++;
-            
+        int delay = VSMainWindow.lineDelay;
+        int timer = VSMainWindow.executionTimer;
+        
+        new Thread(() -> {
             try {
-                Thread.sleep(50);
+                long startTime = System.currentTimeMillis();
+                int sentCount = 0;
+                
+                for (String line : lines) {
+                    // Check timer
+                    if (timer > 0) {
+                        long elapsed = (System.currentTimeMillis() - startTime) / 1000;
+                        if (elapsed >= timer) {
+                            VSBaseMod.LOGGER.info("Timer reached {} seconds, stopping execution", timer);
+                            break;
+                        }
+                    }
+                    
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty()) continue;
+                    
+                    String cmd = trimmed;
+                    if (!cmd.startsWith("/")) {
+                        cmd = "/" + cmd;
+                    }
+                    
+                    mc.execute(() -> mc.player.sendChatMessage(cmd));
+                    sentCount++;
+                    
+                    Thread.sleep(delay);
+                }
+                
+                VSBaseMod.LOGGER.info("Executed {} commands from Macros#{}", sentCount, tabId);
+                
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                break;
+                VSBaseMod.LOGGER.error("Macro execution interrupted");
             }
+        }, "MacroExecutor-" + tabId).start();
+    }
+    
+    // FIX: Вставка из буфера обмена Windows
+    private void pasteFromClipboard() {
+        try {
+            String systemClipboard = GLFW.glfwGetClipboardString(Minecraft.getInstance().getMainWindow().getHandle());
+            if (systemClipboard != null && !systemClipboard.isEmpty()) {
+                String[] linesToPaste = systemClipboard.split("\n", -1);
+                
+                String currentLine = lines.get(cursorLine);
+                String beforeCursor = currentLine.substring(0, cursorCol);
+                String afterCursor = currentLine.substring(cursorCol);
+                
+                lines.set(cursorLine, beforeCursor + linesToPaste[0]);
+                cursorCol += linesToPaste[0].length();
+                
+                for (int i = 1; i < linesToPaste.length; i++) {
+                    lines.add(cursorLine + i, linesToPaste[i]);
+                }
+                
+                if (linesToPaste.length > 0) {
+                    String lastLine = lines.get(cursorLine + linesToPaste.length - 1);
+                    lines.set(cursorLine + linesToPaste.length - 1, lastLine + afterCursor);
+                    cursorLine += linesToPaste.length - 1;
+                    cursorCol = lines.get(cursorLine).length() - afterCursor.length();
+                }
+                
+                scrollCursor();
+                VSBaseMod.LOGGER.info("Pasted {} lines from clipboard", linesToPaste.length);
+            }
+        } catch (Exception e) {
+            VSBaseMod.LOGGER.error("Failed to paste from clipboard", e);
         }
-        
-        VSBaseMod.LOGGER.info("Executed {} commands from Macros#{}", sentCount, tabId);
     }
     
     protected void saveContent() { 
@@ -246,19 +298,16 @@ public class MacrosTab implements IVSTab {
     }
     
     protected void copySelection() { 
-        if (cursorLine < lines.size()) clipboard = lines.get(cursorLine); 
-    }
-    
-    protected void pasteClipboard() {
-        if (!clipboard.isEmpty()) {
-            String line = lines.get(cursorLine);
-            lines.set(cursorLine, line.substring(0, cursorCol) + clipboard + line.substring(cursorCol));
-            cursorCol += clipboard.length();
+        if (cursorLine < lines.size()) {
+            clipboard = lines.get(cursorLine);
+            GLFW.glfwSetClipboardString(Minecraft.getInstance().getMainWindow().getHandle(), clipboard);
         }
     }
     
     protected void cutSelection() { 
-        copySelection(); 
+        copySelection();
+        lines.set(cursorLine, "");
+        cursorCol = 0;
     }
 
     @Override 
