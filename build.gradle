@@ -22,7 +22,8 @@ archivesBaseName = 'vs-base'
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 minecraft {
-    mappings channel: 'official', version: '1.16.5'
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: используем MCP snapshot mappings вместо official
+    mappings channel: 'snapshot', version: '20210309-1.16.5'
     
     runs {
         client {
@@ -53,7 +54,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     mavenCentral()
 }
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
 dependencies {
     minecraft 'net.minecraftforge:forge:1.16.5-36.2.39'
 }
@@ -86,4 +87,3 @@ publishing {
         }
     }
 }
-
