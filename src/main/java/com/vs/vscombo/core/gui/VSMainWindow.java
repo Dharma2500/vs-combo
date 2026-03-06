@@ -96,6 +96,8 @@ public class VSMainWindow extends Screen {
             new StringTextComponent("Macros#4"), btn -> switchTab("macros4")));
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 4, SIDEBAR_WIDTH - 10, 20,
             new StringTextComponent("Macros#5"), btn -> switchTab("macros5")));
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 5, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("Blocks"), btn -> switchTab("blocks")));
         
         initBottomSection();
         initTabButtons();
