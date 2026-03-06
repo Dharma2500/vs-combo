@@ -11,7 +11,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -56,9 +55,9 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: В официальных маппингах поле называется hitResult
-        if (mc.hitResult != null && mc.hitResult.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.hitResult).getPos();
+        // FIX: В 1.16.5 MCP mappings поле называется objectMouseTarget
+        if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
+            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
             
             drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
             
@@ -78,7 +77,7 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // FIX: В официальных маппингах используем getRenderViewEntity()
+        // FIX: В 1.16.5 используем getRenderViewEntity()
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
@@ -99,7 +98,7 @@ public class BlockHighlightHandler {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // FIX: Правильный путь к DefaultVertexFormats для официальных маппингов
+        // FIX: Правильный путь к DefaultVertexFormats для 1.16.5
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
