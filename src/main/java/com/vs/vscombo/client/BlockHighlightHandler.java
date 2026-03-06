@@ -47,9 +47,9 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // MCP snapshot mappings: objectMouseTarget
-        if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
+        // FIX: В MCP snapshot 1.16.5 поле называется objectMouseOver (не objectMouseTarget!)
+        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
+            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
             drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
             
@@ -69,13 +69,13 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // MCP snapshot mappings: posX/prevPosX (не getX/xOld!)
+        // FIX: В MCP snapshot 1.16.5 используем getPosX()/prevPosX (методы + поля)
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
-        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.posX - renderViewEntity.prevPosX) * partialTicks;
-        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.posY - renderViewEntity.prevPosY) * partialTicks;
-        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.posZ - renderViewEntity.prevPosZ) * partialTicks;
+        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.getPosX() - renderViewEntity.prevPosX) * partialTicks;
+        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
+        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
         
         AxisAlignedBB bb = new AxisAlignedBB(
             pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
@@ -89,7 +89,7 @@ public class BlockHighlightHandler {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // Правильный импорт для MCP mappings
+        // FIX: Правильный импорт для MCP mappings
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба (упрощённо)
@@ -132,7 +132,7 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // MCP mappings: mc.world.rand (не random!)
+        // FIX: В MCP mappings поле называется rand (не random!)
         for (int i = 0; i < 4; i++) {
             double offsetX = (mc.world.rand.nextDouble() - 0.5) * 1.2;
             double offsetY = (mc.world.rand.nextDouble() - 0.5) * 1.2;
