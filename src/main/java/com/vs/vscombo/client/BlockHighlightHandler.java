@@ -5,12 +5,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.DefaultVertexFormats;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -55,7 +56,7 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: В официальных маппингах 1.16.5 поле называется hitResult
+        // FIX: В официальных маппингах поле называется hitResult
         if (mc.hitResult != null && mc.hitResult.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.hitResult).getPos();
             
@@ -94,9 +95,11 @@ public class BlockHighlightHandler {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        // FIX: В 1.16.5 используем Tessellator + BufferBuilder вместо WorldRenderer.drawBoundingBox
+        // FIX: Используем Tessellator + BufferBuilder с правильным импортом
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
+        
+        // FIX: Правильный путь к DefaultVertexFormats для официальных маппингов
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
