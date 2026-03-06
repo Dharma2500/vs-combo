@@ -4,6 +4,7 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.client.BlockHighlightHandler;
 import com.vs.vscombo.core.gui.IVSTab;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.AbstractGui;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
@@ -31,7 +32,6 @@ public class BlocksTab implements IVSTab {
         this.width = width;
         this.height = height;
         
-        // Sync with current state
         selectedButton = BlockHighlightHandler.isEffectEnabled() ? 
             getColorButtonIndex(BlockHighlightHandler.getEffectColor()) : -1;
     }
@@ -46,28 +46,24 @@ public class BlocksTab implements IVSTab {
         int startX = x + 10;
         int startY = y + 10;
         
-        // Purple button
         tabButtons.add(new Button(
             startX, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Пурпур"),
             btn -> setEffectColor(0xFF800080, 0)
         ));
         
-        // Lime button
         tabButtons.add(new Button(
             startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Лайм"),
             btn -> setEffectColor(0xFF00FF00, 1)
         ));
         
-        // Red button
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Красный"),
             btn -> setEffectColor(0xFFFF0000, 2)
         ));
         
-        // Clear button
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 3, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Clear"),
@@ -89,9 +85,9 @@ public class BlocksTab implements IVSTab {
     }
     
     private int getColorButtonIndex(int color) {
-        if (color == 0xFF800080) return 0; // Purple
-        if (color == 0xFF00FF00) return 1; // Lime
-        if (color == 0xFFFF0000) return 2; // Red
+        if (color == 0xFF800080) return 0;
+        if (color == 0xFF00FF00) return 1;
+        if (color == 0xFFFF0000) return 2;
         return -1;
     }
 
@@ -100,16 +96,16 @@ public class BlocksTab implements IVSTab {
         AbstractGui.fill(ms, x, y, x + w, y + h, 0xFF252525);
         drawBorder(ms, x, y, w, h, 0xFF444444);
         
-        // Render status
+        Minecraft mc = Minecraft.getInstance();
+        
         if (BlockHighlightHandler.isEffectEnabled()) {
-            parent.fontRenderer.drawString(ms, "Effect: ACTIVE", 
+            mc.fontRenderer.drawString(ms, "Effect: ACTIVE", 
                 (float)(x + 10), (float)(y + 40), BlockHighlightHandler.getEffectColor());
         } else {
-            parent.fontRenderer.drawString(ms, "Effect: INACTIVE", 
+            mc.fontRenderer.drawString(ms, "Effect: INACTIVE", 
                 (float)(x + 10), (float)(y + 40), 0xFFAAAAAA);
         }
         
-        // Highlight selected button
         renderButtonStates(ms, x, y);
     }
 
