@@ -1,10 +1,7 @@
 package com.vs.vscombo.core.gui;
 
+import com.vs.vscombo.feature.tabs.BlocksTab;
 import com.vs.vscombo.feature.tabs.MacrosTab;
-import com.vs.vscombo.feature.tabs.MacrosTab2;
-import com.vs.vscombo.feature.tabs.MacrosTab3;
-import com.vs.vscombo.feature.tabs.MacrosTab4;
-import com.vs.vscombo.feature.tabs.MacrosTab5;
 import net.minecraft.client.gui.screen.Screen;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,10 +17,11 @@ public class TabManager {
     public TabManager(VSMainWindow parent) {
         this.parent = parent;
         registerTab("macros1", new MacrosTab("1"));
-        registerTab("macros2", new MacrosTab2());
-        registerTab("macros3", new MacrosTab3());
-        registerTab("macros4", new MacrosTab4());
-        registerTab("macros5", new MacrosTab5());
+        registerTab("macros2", new MacrosTab("2"));
+        registerTab("macros3", new MacrosTab("3"));
+        registerTab("macros4", new MacrosTab("4"));
+        registerTab("macros5", new MacrosTab("5"));
+        registerTab("blocks", new BlocksTab()); // FIX: Новая вкладка
     }
     
     public void registerTab(String id, IVSTab tab) {
