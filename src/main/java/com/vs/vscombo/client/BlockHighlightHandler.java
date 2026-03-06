@@ -4,7 +4,9 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.DefaultVertexFormats;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -53,13 +55,12 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: Получаем целевой блок через objectMouseTarget (1.16.5 compatible)
-        if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
+        // FIX: В официальных маппингах 1.16.5 поле называется hitResult
+        if (mc.hitResult != null && mc.hitResult.getType() == BlockRayTraceResult.Type.BLOCK) {
+            BlockPos pos = ((BlockRayTraceResult) mc.hitResult).getPos();
             
             drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
             
-            // Спавним частицы каждые 100мс
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
                 spawnBlockParticles(mc, pos);
@@ -76,7 +77,7 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // FIX: Получаем позицию камеры через renderViewEntity (1.16.5 official mappings compatible)
+        // FIX: В официальных маппингах используем getRenderViewEntity()
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
@@ -84,7 +85,6 @@ public class BlockHighlightHandler {
         double viewerY = renderViewEntity.lastTickPosY + (renderViewEntity.getPosY() - renderViewEntity.lastTickPosY) * partialTicks;
         double viewerZ = renderViewEntity.lastTickPosZ + (renderViewEntity.getPosZ() - renderViewEntity.lastTickPosZ) * partialTicks;
         
-        // Создаём AABB относительно камеры
         AxisAlignedBB bb = new AxisAlignedBB(
             pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
             pos.getX() + 1 - viewerX, pos.getY() + 1 - viewerY, pos.getZ() + 1 - viewerZ
@@ -94,9 +94,52 @@ public class BlockHighlightHandler {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        // FIX: Используем WorldRenderer.drawBoundingBox с правильной сигнатурой для 1.16.5
-        WorldRenderer.drawBoundingBox(matrixStack, bb, 
-            (float)r / 255f, (float)g / 255f, (float)b / 255f, 0.8f);
+        // FIX: В 1.16.5 используем Tessellator + BufferBuilder вместо WorldRenderer.drawBoundingBox
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+        
+        // Рисуем 12 рёбер куба
+        // Нижняя грань
+        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        // Верхняя грань
+        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        // Вертикальные рёбра
+        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
+        tessellator.draw();
         
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
