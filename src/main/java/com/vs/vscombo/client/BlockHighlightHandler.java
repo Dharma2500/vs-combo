@@ -2,9 +2,10 @@ package com.vs.vscombo.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -53,16 +54,19 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
+        // FIX: Получаем целевой блок через rayTrace
         BlockRayTraceResult result = mc.objectMouseTarget;
         
         if (result != null && result.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = result.getPos();
             
+            // FIX: Рисуем обводку с правильной сигнатурой для 1.16.5
             drawBlockOutline(matrixStack, pos, effectColor);
             
+            // Спавним частицы
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
-                spawnBlockParticles(pos);
+                spawnBlockParticles(mc, pos);
                 lastParticleTime = currentTime;
             }
         }
@@ -71,34 +75,42 @@ public class BlockHighlightHandler {
     private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
         Minecraft mc = Minecraft.getInstance();
         
+        // FIX: В 1.16.5 используем RenderSystem и IVertexBuilder
         RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
-        RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 
-            GL11.GL_ONE, GL11.GL_ZERO);
-        RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.lineWidth(2.0F);
         
-        double d0 = mc.getRenderManager().viewerX;
-        double d1 = mc.getRenderManager().viewerY;
-        double d2 = mc.getRenderManager().viewerZ;
+        // FIX: Получаем позицию камеры правильно для 1.16.5
+        Vector3d cameraPos = mc.gameRenderer.getMainCamera().getPosition();
         
         AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX() - d0, pos.getY() - d1, pos.getZ() - d2,
-            pos.getX() + 1 - d0, pos.getY() + 1 - d1, pos.getZ() + 1 - d2
+            pos.getX() - cameraPos.x,
+            pos.getY() - cameraPos.y,
+            pos.getZ() - cameraPos.z,
+            pos.getX() + 1 - cameraPos.x,
+            pos.getY() + 1 - cameraPos.y,
+            pos.getZ() + 1 - cameraPos.z
         );
         
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        WorldRenderer.drawBoundingBox(matrixStack, bb, 
+        // FIX: Используем правильный метод drawBoundingBox для 1.16.5
+        IVertexBuilder builder = Minecraft.getInstance().renderBuffers().bufferSource()
+            .getBuffer(RenderType.lines());
+        
+        WorldRenderer.renderLineBox(matrixStack, builder, bb, 
             (float)r / 255f, (float)g / 255f, (float)b / 255f, 0.8f);
+        
+        Minecraft.getInstance().renderBuffers().bufferSource().finish(RenderType.lines());
         
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
     
-    private static void spawnBlockParticles(BlockPos pos) {
-        Minecraft mc = Minecraft.getInstance();
+    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
         for (int i = 0; i < 4; i++) {
