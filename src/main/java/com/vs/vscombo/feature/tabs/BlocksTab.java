@@ -96,6 +96,7 @@ public class BlocksTab implements IVSTab {
         AbstractGui.fill(ms, x, y, x + w, y + h, 0xFF252525);
         drawBorder(ms, x, y, w, h, 0xFF444444);
         
+        // FIX: В Forge 1.16.5 используем Minecraft.getInstance().fontRenderer
         Minecraft mc = Minecraft.getInstance();
         
         if (BlockHighlightHandler.isEffectEnabled()) {
