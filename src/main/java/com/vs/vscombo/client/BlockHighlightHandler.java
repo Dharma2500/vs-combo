@@ -2,14 +2,13 @@ package com.vs.vscombo.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -54,16 +53,13 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: Получаем целевой блок через rayTrace
-        BlockRayTraceResult result = mc.objectMouseTarget;
-        
-        if (result != null && result.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = result.getPos();
+        // FIX: Получаем целевой блок через objectMouseTarget (1.16.5 compatible)
+        if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
+            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
             
-            // FIX: Рисуем обводку с правильной сигнатурой для 1.16.5
-            drawBlockOutline(matrixStack, pos, effectColor);
+            drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
             
-            // Спавним частицы
+            // Спавним частицы каждые 100мс
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
                 spawnBlockParticles(mc, pos);
@@ -72,39 +68,35 @@ public class BlockHighlightHandler {
         }
     }
     
-    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
+    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color, float partialTicks) {
         Minecraft mc = Minecraft.getInstance();
         
-        // FIX: В 1.16.5 используем RenderSystem и IVertexBuilder
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // FIX: Получаем позицию камеры правильно для 1.16.5
-        Vector3d cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        // FIX: Получаем позицию камеры через renderViewEntity (1.16.5 official mappings compatible)
+        Entity renderViewEntity = mc.getRenderViewEntity();
+        if (renderViewEntity == null) return;
         
+        double viewerX = renderViewEntity.lastTickPosX + (renderViewEntity.getPosX() - renderViewEntity.lastTickPosX) * partialTicks;
+        double viewerY = renderViewEntity.lastTickPosY + (renderViewEntity.getPosY() - renderViewEntity.lastTickPosY) * partialTicks;
+        double viewerZ = renderViewEntity.lastTickPosZ + (renderViewEntity.getPosZ() - renderViewEntity.lastTickPosZ) * partialTicks;
+        
+        // Создаём AABB относительно камеры
         AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX() - cameraPos.x,
-            pos.getY() - cameraPos.y,
-            pos.getZ() - cameraPos.z,
-            pos.getX() + 1 - cameraPos.x,
-            pos.getY() + 1 - cameraPos.y,
-            pos.getZ() + 1 - cameraPos.z
+            pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
+            pos.getX() + 1 - viewerX, pos.getY() + 1 - viewerY, pos.getZ() + 1 - viewerZ
         );
         
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        // FIX: Используем правильный метод drawBoundingBox для 1.16.5
-        IVertexBuilder builder = Minecraft.getInstance().renderBuffers().bufferSource()
-            .getBuffer(RenderType.lines());
-        
-        WorldRenderer.renderLineBox(matrixStack, builder, bb, 
+        // FIX: Используем WorldRenderer.drawBoundingBox с правильной сигнатурой для 1.16.5
+        WorldRenderer.drawBoundingBox(matrixStack, bb, 
             (float)r / 255f, (float)g / 255f, (float)b / 255f, 0.8f);
-        
-        Minecraft.getInstance().renderBuffers().bufferSource().finish(RenderType.lines());
         
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
