@@ -34,17 +34,9 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block highlight color set to {}", color);
     }
     
-    public static boolean isEffectEnabled() {
-        return effectEnabled;
-    }
-    
-    public static int getEffectColor() {
-        return effectColor;
-    }
-    
-    public static void clearEffect() {
-        effectEnabled = false;
-    }
+    public static boolean isEffectEnabled() { return effectEnabled; }
+    public static int getEffectColor() { return effectColor; }
+    public static void clearEffect() { effectEnabled = false; }
     
     @SubscribeEvent
     public static void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -55,7 +47,7 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: В MCP snapshot mappings поле называется objectMouseTarget
+        // MCP snapshot mappings: objectMouseTarget
         if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
             
@@ -77,7 +69,7 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // FIX: В MCP snapshot mappings используем getRenderViewEntity() и prevPosX/posX
+        // MCP snapshot mappings: posX/prevPosX (не getX/xOld!)
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
@@ -94,50 +86,40 @@ public class BlockHighlightHandler {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        // FIX: Используем Tessellator + BufferBuilder с правильным импортом
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // FIX: Правильный путь к DefaultVertexFormats для MCP mappings
+        // Правильный импорт для MCP mappings
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
-        // Рисуем 12 рёбер куба
+        // Рисуем 12 рёбер куба (упрощённо)
         // Нижняя грань
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         
         // Верхняя грань
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         
         // Вертикальные рёбра
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
-        
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         
@@ -150,7 +132,7 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // FIX: В MCP mappings поле называется rand, а не random
+        // MCP mappings: mc.world.rand (не random!)
         for (int i = 0; i < 4; i++) {
             double offsetX = (mc.world.rand.nextDouble() - 0.5) * 1.2;
             double offsetY = (mc.world.rand.nextDouble() - 0.5) * 1.2;
