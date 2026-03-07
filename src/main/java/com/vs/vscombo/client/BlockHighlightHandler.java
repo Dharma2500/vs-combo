@@ -19,7 +19,6 @@ public class BlockHighlightHandler {
     private static int effectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
-    // Цвета частиц для разных типов
     private static final int COLOR_PURPLE = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
@@ -45,96 +44,72 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // Получаем блок, на который смотрит игрок
         if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
             return;
         }
         
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         
-        // Спавним частицы каждые 50мс (20 раз в секунду)
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastParticleTime > 50) {
-            spawnBlockParticles(mc, pos);
+        if (currentTime - lastParticleTime > 100) {
+            spawnCornerParticles(mc, pos);
             lastParticleTime = currentTime;
         }
     }
     
-    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
+    private static void spawnCornerParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // Центр блока
-        double centerX = pos.getX() + 0.5;
-        double centerY = pos.getY() + 0.5;
-        double centerZ = pos.getZ() + 0.5;
-        
-        // Выбираем тип частиц в зависимости от цвета
         BasicParticleType particleType = getParticleTypeForColor(effectColor);
         
-        // Создаем поток частиц от 8 углов блока наружу
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, 1, 1, 1);   // +X +Y +Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, 1, 1, -1);  // +X +Y -Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, 1, -1, 1);  // +X -Y +Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, 1, -1, -1); // +X -Y -Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, -1, 1, 1);  // -X +Y +Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, -1, 1, -1); // -X +Y -Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, -1, -1, 1); // -X -Y +Z
-        spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, -1, -1, -1);// -X -Y -Z
-        
-        // Дополнительные частицы от граней блока
-        spawnParticleFromFace(mc, particleType, centerX, centerY, centerZ);
-    }
-    
-    private static void spawnParticleFromCorner(Minecraft mc, BasicParticleType particleType, 
-                                                 double centerX, double centerY, double centerZ,
-                                                 int dirX, int dirY, int dirZ) {
-        // Позиция частицы на углу блока (0.5 блока от центра)
-        double posX = centerX + (dirX * 0.5);
-        double posY = centerY + (dirY * 0.5);
-        double posZ = centerZ + (dirZ * 0.5);
-        
-        // Направление движения от центра наружу (нормализованное)
-        double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-        double velX = (dirX / length) * 0.15;
-        double velY = (dirY / length) * 0.15;
-        double velZ = (dirZ / length) * 0.15;
-        
-        // FIX: Приводим BasicParticleType к IParticleData
-        mc.world.addParticle((IParticleData) particleType, posX, posY, posZ, velX, velY, velZ);
-    }
-    
-    private static void spawnParticleFromFace(Minecraft mc, BasicParticleType particleType,
-                                               double centerX, double centerY, double centerZ) {
-        // Частицы от 6 граней блока
-        int[][] faces = {
-            {1, 0, 0}, {-1, 0, 0},  // +X, -X
-            {0, 1, 0}, {0, -1, 0},  // +Y, -Y
-            {0, 0, 1}, {0, 0, -1}   // +Z, -Z
+        // 8 углов блока
+        double[][] corners = {
+            {pos.getX(), pos.getY(), pos.getZ()},                    // 0,0,0
+            {pos.getX() + 1, pos.getY(), pos.getZ()},                // 1,0,0
+            {pos.getX(), pos.getY() + 1, pos.getZ()},                // 0,1,0
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},            // 1,1,0
+            {pos.getX(), pos.getY(), pos.getZ() + 1},                // 0,0,1
+            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},            // 1,0,1
+            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},            // 0,1,1
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}         // 1,1,1
         };
         
-        for (int[] face : faces) {
-            double posX = centerX + (face[0] * 0.5);
-            double posY = centerY + (face[1] * 0.5);
-            double posZ = centerZ + (face[2] * 0.5);
+        // Спавним частицы от каждого угла
+        for (double[] corner : corners) {
+            // Направление ОТ центра блока к углу
+            double centerX = pos.getX() + 0.5;
+            double centerY = pos.getY() + 0.5;
+            double centerZ = pos.getZ() + 0.5;
             
-            double velX = face[0] * 0.1;
-            double velY = face[1] * 0.1;
-            double velZ = face[2] * 0.1;
+            double dirX = corner[0] - centerX;
+            double dirY = corner[1] - centerY;
+            double dirZ = corner[2] - centerZ;
             
-            // FIX: Приводим BasicParticleType к IParticleData
-            mc.world.addParticle((IParticleData) particleType, posX, posY, posZ, velX, velY, velZ);
+            // Нормализуем и усиливаем скорость
+            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            if (length > 0) {
+                dirX = (dirX / length) * 0.3;
+                dirY = (dirY / length) * 0.3;
+                dirZ = (dirZ / length) * 0.3;
+            }
+            
+            // Спавним частицу на угле с направлением ОТ центра
+            mc.world.addParticle(
+                (IParticleData) particleType,
+                corner[0], corner[1], corner[2],
+                dirX, dirY, dirZ
+            );
         }
     }
     
     private static BasicParticleType getParticleTypeForColor(int color) {
-        // Выбираем тип частиц в зависимости от цвета
         if (color == COLOR_PURPLE) {
-            return ParticleTypes.PORTAL;      // Пурпурные частицы
+            return ParticleTypes.PORTAL;
         } else if (color == COLOR_LIME) {
-            return ParticleTypes.ENCHANT;     // Зелёные частицы
+            return ParticleTypes.ENCHANT;
         } else if (color == COLOR_RED) {
-            return ParticleTypes.FLAME;       // Оранжево-красные частицы
+            return ParticleTypes.FLAME;
         }
-        return ParticleTypes.PORTAL; // По умолчанию
+        return ParticleTypes.PORTAL;
     }
 }
