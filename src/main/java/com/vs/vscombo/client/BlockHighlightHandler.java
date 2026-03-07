@@ -44,13 +44,12 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        MatrixStack matrixStack = event.getMatrixStack();
-        
-        // Получаем блок, на который смотрит игрок
-        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
+        // FIX: Используем mc.objectMouseOver для MCP mappings
+        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
+            BlockRayTraceResult rayTraceResult = (BlockRayTraceResult) mc.objectMouseOver;
+            BlockPos pos = rayTraceResult.getPos();
             
-            drawBlockOutline(matrixStack, pos, effectColor);
+            drawBlockOutline(event.getMatrixStack(), pos, effectColor);
             
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
@@ -72,7 +71,7 @@ public class BlockHighlightHandler {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
-        // FIX: Используем координаты блока напрямую (без вычитания камеры!)
+        // FIX: Создаем AABB с координатами блока (без вычитания камеры!)
         // MatrixStack уже содержит трансформацию камеры
         AxisAlignedBB bb = new AxisAlignedBB(
             pos.getX(), pos.getY(), pos.getZ(),
@@ -82,6 +81,7 @@ public class BlockHighlightHandler {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
+        // Правильный импорт для MCP mappings
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
@@ -133,7 +133,7 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // Центр блока
+        // Частицы летят ОТ ЦЕНТРА БЛОКА наружу
         double centerX = pos.getX() + 0.5;
         double centerY = pos.getY() + 0.5;
         double centerZ = pos.getZ() + 0.5;
@@ -152,7 +152,7 @@ public class BlockHighlightHandler {
                 offsetZ /= length;
             }
             
-            // Спавним частицу в центре блока
+            // Спавним частицу
             mc.world.addParticle(
                 net.minecraft.particles.ParticleTypes.PORTAL,
                 centerX, centerY, centerZ,
