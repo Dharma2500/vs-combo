@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -47,11 +46,11 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: Используем objectMouseOver для совместимости
+        // Получаем блок, на который смотрит игрок
         if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
-            drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
+            drawBlockOutline(matrixStack, pos, effectColor);
             
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
@@ -61,36 +60,28 @@ public class BlockHighlightHandler {
         }
     }
     
-    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color, float partialTicks) {
+    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
         Minecraft mc = Minecraft.getInstance();
         
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
-        RenderSystem.lineWidth(20.0F); // В 10 раз толще
-        
-        // FIX: Используем getPosX()/prevPosX для обфусцированных маппингов
-        Entity renderViewEntity = mc.getRenderViewEntity();
-        if (renderViewEntity == null) return;
-        
-        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.getPosX() - renderViewEntity.prevPosX) * partialTicks;
-        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
-        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
-        
-        // Создаем AABB с правильными координатами
-        AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
-            pos.getX() + 1 - viewerX, pos.getY() + 1 - viewerY, pos.getZ() + 1 - viewerZ
-        );
+        RenderSystem.lineWidth(20.0F); // Толстая линия
         
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
+        // FIX: Используем координаты блока напрямую (без вычитания камеры!)
+        // MatrixStack уже содержит трансформацию камеры
+        AxisAlignedBB bb = new AxisAlignedBB(
+            pos.getX(), pos.getY(), pos.getZ(),
+            pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1
+        );
+        
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // Правильный импорт для маппингов
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
@@ -142,7 +133,7 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // Частицы летят ОТ ЦЕНТРА БЛОКА наружу
+        // Центр блока
         double centerX = pos.getX() + 0.5;
         double centerY = pos.getY() + 0.5;
         double centerZ = pos.getZ() + 0.5;
@@ -161,7 +152,7 @@ public class BlockHighlightHandler {
                 offsetZ /= length;
             }
             
-            // Спавним частицу
+            // Спавним частицу в центре блока
             mc.world.addParticle(
                 net.minecraft.particles.ParticleTypes.PORTAL,
                 centerX, centerY, centerZ,
