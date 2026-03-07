@@ -47,3 +47,8 @@ jobs:
           files: build/libs/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         
+      - name: Clean Gradle cache
+        run:
+          rm -rf ~/.gradle/caches/
+          rm -rf .gradle/
