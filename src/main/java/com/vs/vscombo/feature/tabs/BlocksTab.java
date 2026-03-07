@@ -19,8 +19,7 @@ public class BlocksTab implements IVSTab {
     protected int x, y, width, height;
     
     protected final List<Button> tabButtons = new ArrayList<>();
-    protected int selectedButton = BlockHighlightHandler.isEffectEnabled() ? 
-        getColorButtonIndex(BlockHighlightHandler.getEffectColor()) : -1;
+    protected int selectedButton = -1;
 
     public BlocksTab() {}
 
@@ -32,15 +31,19 @@ public class BlocksTab implements IVSTab {
         this.width = width;
         this.height = height;
         
-        selectedButton = BlockHighlightHandler.isEffectEnabled() ? 
-            getColorButtonIndex(BlockHighlightHandler.getEffectColor()) : -1;
+        // Обновляем выбранную кнопку
+        if (BlockHighlightHandler.isEffectEnabled()) {
+            selectedButton = getColorButtonIndex(BlockHighlightHandler.getEffectColor());
+        } else {
+            selectedButton = -1;
+        }
     }
 
     @Override
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
         
-        // FIX: 4 кнопки в верхней части области контента
+        // 4 кнопки в верхней части
         int buttonWidth = 80;
         int buttonHeight = 20;
         int spacing = 10;
@@ -82,11 +85,13 @@ public class BlocksTab implements IVSTab {
         BlockHighlightHandler.setEffectEnabled(true);
         BlockHighlightHandler.setEffectColor(color);
         selectedButton = buttonIndex;
+        VSBaseMod.LOGGER.info("Set effect color to 0x{}", Integer.toHexString(color));
     }
 
     private void clearEffect() {
         BlockHighlightHandler.clearEffect();
         selectedButton = -1;
+        VSBaseMod.LOGGER.info("Cleared effect");
     }
     
     private int getColorButtonIndex(int color) {
@@ -103,13 +108,17 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // FIX: Отображаем статус эффекта
+        // Отображаем статус
         if (BlockHighlightHandler.isEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Effect: ACTIVE", 
                 (float)(x + 10), (float)(y + 50), BlockHighlightHandler.getEffectColor());
+            mc.fontRenderer.drawString(ms, "Look at a block", 
+                (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
         } else {
             mc.fontRenderer.drawString(ms, "Effect: INACTIVE", 
                 (float)(x + 10), (float)(y + 50), 0xFFAAAAAA);
+            mc.fontRenderer.drawString(ms, "Click a color button", 
+                (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
         }
         
         // Подсветка выбранной кнопки
