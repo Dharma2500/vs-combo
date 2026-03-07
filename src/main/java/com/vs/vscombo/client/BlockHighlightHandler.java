@@ -34,17 +34,9 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block highlight color set to {}", color);
     }
     
-    public static boolean isEffectEnabled() { 
-        return effectEnabled; 
-    }
-    
-    public static int getEffectColor() { 
-        return effectColor; 
-    }
-    
-    public static void clearEffect() { 
-        effectEnabled = false; 
-    }
+    public static boolean isEffectEnabled() { return effectEnabled; }
+    public static int getEffectColor() { return effectColor; }
+    public static void clearEffect() { effectEnabled = false; }
     
     @SubscribeEvent
     public static void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -55,8 +47,8 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: В MCP mappings поле называется objectMouseOver
-        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
+        // FIX: Используем objectMouseOver для совместимости
+        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
             drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
@@ -77,13 +69,13 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(20.0F); // В 10 раз толще
         
-        // FIX: В MCP mappings используем getRenderViewEntity() и prevPosX/posX
+        // FIX: Используем getPosX()/prevPosX для обфусцированных маппингов
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
-        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.posX - renderViewEntity.prevPosX) * partialTicks;
-        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.posY - renderViewEntity.prevPosY) * partialTicks;
-        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.posZ - renderViewEntity.prevPosZ) * partialTicks;
+        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.getPosX() - renderViewEntity.prevPosX) * partialTicks;
+        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
+        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
         
         // Создаем AABB с правильными координатами
         AxisAlignedBB bb = new AxisAlignedBB(
@@ -98,6 +90,7 @@ public class BlockHighlightHandler {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
+        // Правильный импорт для маппингов
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
