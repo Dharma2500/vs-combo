@@ -47,7 +47,7 @@ public class BlockHighlightHandler {
         
         MatrixStack matrixStack = event.getMatrixStack();
         
-        // FIX: В MCP snapshot 1.16.5 поле называется objectMouseOver (не objectMouseTarget!)
+        // MCP snapshot mappings: objectMouseOver
         if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
@@ -69,7 +69,7 @@ public class BlockHighlightHandler {
         RenderSystem.disableTexture();
         RenderSystem.lineWidth(2.0F);
         
-        // FIX: В MCP snapshot 1.16.5 используем getPosX()/prevPosX (методы + поля)
+        // FIX: Правильный расчет позиции камеры для MCP mappings
         Entity renderViewEntity = mc.getRenderViewEntity();
         if (renderViewEntity == null) return;
         
@@ -77,6 +77,7 @@ public class BlockHighlightHandler {
         double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
         double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
         
+        // FIX: Создаем AABB относительно камеры (правильная позиция блока)
         AxisAlignedBB bb = new AxisAlignedBB(
             pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
             pos.getX() + 1 - viewerX, pos.getY() + 1 - viewerY, pos.getZ() + 1 - viewerZ
@@ -89,10 +90,10 @@ public class BlockHighlightHandler {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // FIX: Правильный импорт для MCP mappings
+        // Правильный импорт для MCP mappings
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
-        // Рисуем 12 рёбер куба (упрощённо)
+        // Рисуем 12 рёбер куба
         // Нижняя грань
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
@@ -132,18 +133,30 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // FIX: В MCP mappings поле называется rand (не random!)
-        for (int i = 0; i < 4; i++) {
-            double offsetX = (mc.world.rand.nextDouble() - 0.5) * 1.2;
-            double offsetY = (mc.world.rand.nextDouble() - 0.5) * 1.2;
-            double offsetZ = (mc.world.rand.nextDouble() - 0.5) * 1.2;
+        // FIX: Частицы летят ОТ ЦЕНТРА БЛОКА наружу в разные стороны
+        double centerX = pos.getX() + 0.5;
+        double centerY = pos.getY() + 0.5;
+        double centerZ = pos.getZ() + 0.5;
+        
+        for (int i = 0; i < 8; i++) {
+            // Генерируем случайное направление ОТ центра
+            double offsetX = (mc.world.rand.nextDouble() - 0.5) * 2.0;
+            double offsetY = (mc.world.rand.nextDouble() - 0.5) * 2.0;
+            double offsetZ = (mc.world.rand.nextDouble() - 0.5) * 2.0;
             
+            // Нормализуем вектор направления
+            double length = Math.sqrt(offsetX * offsetX + offsetY * offsetY + offsetZ * offsetZ);
+            if (length > 0) {
+                offsetX /= length;
+                offsetY /= length;
+                offsetZ /= length;
+            }
+            
+            // Спавним частицу в центре блока с направлением наружу
             mc.world.addParticle(
                 net.minecraft.particles.ParticleTypes.PORTAL,
-                pos.getX() + 0.5 + offsetX,
-                pos.getY() + 0.5 + offsetY,
-                pos.getZ() + 0.5 + offsetZ,
-                0, 0, 0
+                centerX, centerY, centerZ,
+                offsetX * 0.5, offsetY * 0.5, offsetZ * 0.5
             );
         }
     }
