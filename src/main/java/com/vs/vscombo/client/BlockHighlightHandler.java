@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -61,6 +62,8 @@ public class BlockHighlightHandler {
     }
     
     private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
+        Minecraft mc = Minecraft.getInstance();
+        
         // Извлекаем компоненты цвета
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
