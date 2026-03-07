@@ -1,21 +1,13 @@
 package com.vs.vscombo.client;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.lwjgl.opengl.GL11;
 
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class BlockHighlightHandler {
@@ -26,12 +18,12 @@ public class BlockHighlightHandler {
     
     public static void setEffectEnabled(boolean enabled) {
         effectEnabled = enabled;
-        VSBaseMod.LOGGER.info("Block highlight {}", enabled ? "enabled" : "disabled");
+        VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
     public static void setEffectColor(int color) {
         effectColor = color;
-        VSBaseMod.LOGGER.info("Block highlight color set to 0x{}", Integer.toHexString(color));
+        VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
     public static boolean isEffectEnabled() { return effectEnabled; }
@@ -39,110 +31,26 @@ public class BlockHighlightHandler {
     public static void clearEffect() { effectEnabled = false; }
     
     @SubscribeEvent
-    public static void onRenderWorldLast(RenderWorldLastEvent event) {
-        if (!effectEnabled) return;
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (!effectEnabled || event.phase != TickEvent.Phase.END) return;
         
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // Получаем блок, на который смотрит игрок
-        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
-            
-            MatrixStack matrixStack = event.getMatrixStack();
-            drawBlockOutline(matrixStack, pos, effectColor);
-            
-            // Спавним частицы каждые 100мс
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastParticleTime > 100) {
-                spawnBlockParticles(mc, pos);
-                lastParticleTime = currentTime;
-            }
+        // Спавним частицы каждые 100мс
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastParticleTime > 100) {
+            spawnBlockParticles(mc);
+            lastParticleTime = currentTime;
         }
     }
     
-    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
-        Minecraft mc = Minecraft.getInstance();
+    private static void spawnBlockParticles(Minecraft mc) {
+        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
+            return;
+        }
         
-        // Извлекаем компоненты цвета
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        int a = 200; // Полупрозрачность
-        
-        // Push матрицу
-        matrixStack.push();
-        
-        // Включаем blending
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableTexture();
-        RenderSystem.disableDepthTest();
-        RenderSystem.lineWidth(3.0F);
-        
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        
-        // Начинаем рисовать линии
-        buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
-        
-        // Рисуем все 12 ребер куба с координатами блока
-        double x = pos.getX();
-        double y = pos.getY();
-        double z = pos.getZ();
-        
-        // Нижняя грань
-        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
-        
-        // Верхняя грань
-        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
-        
-        // Вертикальные ребра
-        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
-        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
-        
-        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
-        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
-        
-        tessellator.draw();
-        
-        // Восстанавливаем состояние
-        RenderSystem.enableTexture();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-        
-        // Pop матрицу
-        matrixStack.pop();
-    }
-    
-    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
-        if (mc.world == null) return;
+        BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         
         // Центр блока
         double centerX = pos.getX() + 0.5;
