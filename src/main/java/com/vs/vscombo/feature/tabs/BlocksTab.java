@@ -31,7 +31,6 @@ public class BlocksTab implements IVSTab {
         this.width = width;
         this.height = height;
         
-        // Обновляем выбранную кнопку
         if (BlockHighlightHandler.isEffectEnabled()) {
             selectedButton = getColorButtonIndex(BlockHighlightHandler.getEffectColor());
         } else {
@@ -43,35 +42,30 @@ public class BlocksTab implements IVSTab {
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
         
-        // 4 кнопки в верхней части
         int buttonWidth = 80;
         int buttonHeight = 20;
         int spacing = 10;
         int startX = x + 10;
         int startY = y + 10;
         
-        // Кнопка Пурпур
         tabButtons.add(new Button(
             startX, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Пурпур"),
             btn -> setEffectColor(0xFF800080, 0)
         ));
         
-        // Кнопка Лайм
         tabButtons.add(new Button(
             startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Лайм"),
             btn -> setEffectColor(0xFF00FF00, 1)
         ));
         
-        // Кнопка Красный
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Красный"),
             btn -> setEffectColor(0xFFFF0000, 2)
         ));
         
-        // Кнопка Clear
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 3, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Clear"),
@@ -108,11 +102,10 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // Отображаем статус
         if (BlockHighlightHandler.isEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Effect: ACTIVE", 
                 (float)(x + 10), (float)(y + 50), BlockHighlightHandler.getEffectColor());
-            mc.fontRenderer.drawString(ms, "Look at a block", 
+            mc.fontRenderer.drawString(ms, "Look at a block for particles", 
                 (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
         } else {
             mc.fontRenderer.drawString(ms, "Effect: INACTIVE", 
@@ -121,7 +114,6 @@ public class BlocksTab implements IVSTab {
                 (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
         }
         
-        // Подсветка выбранной кнопки
         renderButtonStates(ms, x, y);
     }
 
