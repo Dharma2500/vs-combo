@@ -2,6 +2,8 @@ package com.vs.vscombo.client;
 
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.particles.BasicParticleType;
+import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -14,7 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 public class BlockHighlightHandler {
     
     private static boolean effectEnabled = false;
-    private static int effectColor = 0xFF800080; // По умолчанию пурпурный
+    private static int effectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
     // Цвета частиц для разных типов
@@ -32,17 +34,9 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isEffectEnabled() { 
-        return effectEnabled; 
-    }
-    
-    public static int getEffectColor() { 
-        return effectColor; 
-    }
-    
-    public static void clearEffect() { 
-        effectEnabled = false; 
-    }
+    public static boolean isEffectEnabled() { return effectEnabled; }
+    public static int getEffectColor() { return effectColor; }
+    public static void clearEffect() { effectEnabled = false; }
     
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -52,7 +46,7 @@ public class BlockHighlightHandler {
         if (mc.player == null || mc.world == null) return;
         
         // Получаем блок, на который смотрит игрок
-        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
+        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
             return;
         }
         
@@ -75,7 +69,7 @@ public class BlockHighlightHandler {
         double centerZ = pos.getZ() + 0.5;
         
         // Выбираем тип частиц в зависимости от цвета
-        ParticleTypes particleType = getParticleTypeForColor(effectColor);
+        BasicParticleType particleType = getParticleTypeForColor(effectColor);
         
         // Создаем поток частиц от 8 углов блока наружу
         spawnParticleFromCorner(mc, particleType, centerX, centerY, centerZ, 1, 1, 1);   // +X +Y +Z
@@ -91,7 +85,7 @@ public class BlockHighlightHandler {
         spawnParticleFromFace(mc, particleType, centerX, centerY, centerZ);
     }
     
-    private static void spawnParticleFromCorner(Minecraft mc, ParticleTypes particleType, 
+    private static void spawnParticleFromCorner(Minecraft mc, BasicParticleType particleType, 
                                                  double centerX, double centerY, double centerZ,
                                                  int dirX, int dirY, int dirZ) {
         // Позиция частицы на углу блока (0.5 блока от центра)
@@ -105,11 +99,11 @@ public class BlockHighlightHandler {
         double velY = (dirY / length) * 0.15;
         double velZ = (dirZ / length) * 0.15;
         
-        // Спавним частицу
-        mc.world.addParticle(particleType, posX, posY, posZ, velX, velY, velZ);
+        // FIX: Приводим BasicParticleType к IParticleData
+        mc.world.addParticle((IParticleData) particleType, posX, posY, posZ, velX, velY, velZ);
     }
     
-    private static void spawnParticleFromFace(Minecraft mc, ParticleTypes particleType,
+    private static void spawnParticleFromFace(Minecraft mc, BasicParticleType particleType,
                                                double centerX, double centerY, double centerZ) {
         // Частицы от 6 граней блока
         int[][] faces = {
@@ -127,11 +121,12 @@ public class BlockHighlightHandler {
             double velY = face[1] * 0.1;
             double velZ = face[2] * 0.1;
             
-            mc.world.addParticle(particleType, posX, posY, posZ, velX, velY, velZ);
+            // FIX: Приводим BasicParticleType к IParticleData
+            mc.world.addParticle((IParticleData) particleType, posX, posY, posZ, velX, velY, velZ);
         }
     }
     
-    private static ParticleTypes getParticleTypeForColor(int color) {
+    private static BasicParticleType getParticleTypeForColor(int color) {
         // Выбираем тип частиц в зависимости от цвета
         if (color == COLOR_PURPLE) {
             return ParticleTypes.PORTAL;      // Пурпурные частицы
