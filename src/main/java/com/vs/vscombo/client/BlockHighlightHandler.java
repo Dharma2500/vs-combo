@@ -52,7 +52,7 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // Получаем блок, на который смотрит игрок
+        // FIX: Для MCP mappings используем objectMouseOver
         if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
@@ -69,8 +69,6 @@ public class BlockHighlightHandler {
     }
     
     private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
-        Minecraft mc = Minecraft.getInstance();
-        
         // Извлекаем компоненты цвета
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
