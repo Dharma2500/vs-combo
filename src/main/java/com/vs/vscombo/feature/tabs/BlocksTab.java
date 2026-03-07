@@ -42,30 +42,35 @@ public class BlocksTab implements IVSTab {
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
         
+        // 4 кнопки в верхней части
         int buttonWidth = 80;
         int buttonHeight = 20;
         int spacing = 10;
         int startX = x + 10;
         int startY = y + 10;
         
+        // Кнопка Пурпур
         tabButtons.add(new Button(
             startX, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Пурпур"),
             btn -> setEffectColor(0xFF800080, 0)
         ));
         
+        // Кнопка Лайм
         tabButtons.add(new Button(
             startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Лайм"),
             btn -> setEffectColor(0xFF00FF00, 1)
         ));
         
+        // Кнопка Красный
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Красный"),
             btn -> setEffectColor(0xFFFF0000, 2)
         ));
         
+        // Кнопка Clear
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 3, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Clear"),
