@@ -52,15 +52,28 @@ public class BlockHighlightHandler {
         
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastParticleTime > 100) {
-            spawnCornerParticles(mc, pos);
+            spawnColoredParticles(mc, pos);
             lastParticleTime = currentTime;
         }
     }
     
-    private static void spawnCornerParticles(Minecraft mc, BlockPos pos) {
+    private static void spawnColoredParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        BasicParticleType particleType = getParticleTypeForColor(effectColor);
+        // Центр блока
+        double centerX = pos.getX() + 0.5;
+        double centerY = pos.getY() + 0.5;
+        double centerZ = pos.getZ() + 0.5;
+        
+        // Извлекаем RGB компоненты из цвета
+        int r = (effectColor >> 16) & 0xFF;
+        int g = (effectColor >> 8) & 0xFF;
+        int b = effectColor & 0xFF;
+        
+        // Нормализуем цвета (0.0 - 1.0)
+        float red = r / 255.0f;
+        float green = g / 255.0f;
+        float blue = b / 255.0f;
         
         // 8 углов блока
         double[][] corners = {
@@ -77,10 +90,6 @@ public class BlockHighlightHandler {
         // Спавним частицы от каждого угла
         for (double[] corner : corners) {
             // Направление ОТ центра блока к углу
-            double centerX = pos.getX() + 0.5;
-            double centerY = pos.getY() + 0.5;
-            double centerZ = pos.getZ() + 0.5;
-            
             double dirX = corner[0] - centerX;
             double dirY = corner[1] - centerY;
             double dirZ = corner[2] - centerZ;
@@ -93,23 +102,12 @@ public class BlockHighlightHandler {
                 dirZ = (dirZ / length) * 0.3;
             }
             
-            // Спавним частицу на угле с направлением ОТ центра
+            // Спавним цветную частицу (ENTITY_EFFECT поддерживает цвет)
             mc.world.addParticle(
-                (IParticleData) particleType,
+                ParticleTypes.ENTITY_EFFECT,
                 corner[0], corner[1], corner[2],
-                dirX, dirY, dirZ
+                red, green, blue
             );
         }
-    }
-    
-    private static BasicParticleType getParticleTypeForColor(int color) {
-        if (color == COLOR_PURPLE) {
-            return ParticleTypes.PORTAL;
-        } else if (color == COLOR_LIME) {
-            return ParticleTypes.ENCHANT;
-        } else if (color == COLOR_RED) {
-            return ParticleTypes.FLAME;
-        }
-        return ParticleTypes.PORTAL;
     }
 }
