@@ -33,17 +33,9 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block highlight color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isEffectEnabled() { 
-        return effectEnabled; 
-    }
-    
-    public static int getEffectColor() { 
-        return effectColor; 
-    }
-    
-    public static void clearEffect() { 
-        effectEnabled = false; 
-    }
+    public static boolean isEffectEnabled() { return effectEnabled; }
+    public static int getEffectColor() { return effectColor; }
+    public static void clearEffect() { effectEnabled = false; }
     
     @SubscribeEvent
     public static void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -52,7 +44,7 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // FIX: Для MCP mappings используем objectMouseOver
+        // Получаем блок, на который смотрит игрок
         if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
             BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
             
@@ -75,12 +67,6 @@ public class BlockHighlightHandler {
         int b = color & 0xFF;
         int a = 200; // Полупрозрачность
         
-        // Создаем AABB для блока
-        AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX(), pos.getY(), pos.getZ(),
-            pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1
-        );
-        
         // Push матрицу
         matrixStack.push();
         
@@ -88,6 +74,7 @@ public class BlockHighlightHandler {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
+        RenderSystem.disableDepthTest();
         RenderSystem.lineWidth(3.0F);
         
         Tessellator tessellator = Tessellator.getInstance();
@@ -96,50 +83,55 @@ public class BlockHighlightHandler {
         // Начинаем рисовать линии
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
-        // Рисуем все 12 ребер куба
+        // Рисуем все 12 ребер куба с координатами блока
+        double x = pos.getX();
+        double y = pos.getY();
+        double z = pos.getZ();
+        
         // Нижняя грань
-        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
         
         // Верхняя грань
-        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
         
         // Вертикальные ребра
-        buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x + 1, y + 1, z + 1).color(r, g, b, a).endVertex();
         
-        buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        buffer.pos(x, y, z + 1).color(r, g, b, a).endVertex();
+        buffer.pos(x, y + 1, z + 1).color(r, g, b, a).endVertex();
         
         tessellator.draw();
         
         // Восстанавливаем состояние
         RenderSystem.enableTexture();
+        RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
         
         // Pop матрицу
