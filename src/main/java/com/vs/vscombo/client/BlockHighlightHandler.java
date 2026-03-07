@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -45,13 +44,11 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        MatrixStack matrixStack = event.getMatrixStack();
-        
-        // MCP snapshot mappings: objectMouseOver
-        if (mc.objectMouseOver != null && mc.objectMouseOver.getType() == BlockRayTraceResult.Type.BLOCK) {
-            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
+        // FIX: Используем mc.objectMouseTarget для MCP mappings
+        if (mc.objectMouseTarget != null && mc.objectMouseTarget.getType() == BlockRayTraceResult.Type.BLOCK) {
+            BlockPos pos = ((BlockRayTraceResult) mc.objectMouseTarget).getPos();
             
-            drawBlockOutline(matrixStack, pos, effectColor, event.getPartialTicks());
+            drawBlockOutline(event.getMatrixStack(), pos, effectColor);
             
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastParticleTime > 100) {
@@ -61,42 +58,31 @@ public class BlockHighlightHandler {
         }
     }
     
-    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color, float partialTicks) {
+    private static void drawBlockOutline(MatrixStack matrixStack, BlockPos pos, int color) {
         Minecraft mc = Minecraft.getInstance();
         
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
         
-        // FIX: Увеличиваем толщину линии в 10 раз (было 2.0F, стало 20.0F)
+        // FIX: Толщина линии в 10 раз больше (было 2.0F, стало 20.0F)
         RenderSystem.lineWidth(20.0F);
-        
-        // FIX: Правильный расчет позиции камеры для MCP mappings
-        Entity renderViewEntity = mc.getRenderViewEntity();
-        if (renderViewEntity == null) return;
-        
-        double viewerX = renderViewEntity.prevPosX + (renderViewEntity.getPosX() - renderViewEntity.prevPosX) * partialTicks;
-        double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
-        double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
-        
-        // FIX: Создаем AABB с правильными координатами блока относительно камеры
-        AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX() - viewerX, 
-            pos.getY() - viewerY, 
-            pos.getZ() - viewerZ,
-            pos.getX() + 1 - viewerX, 
-            pos.getY() + 1 - viewerY, 
-            pos.getZ() + 1 - viewerZ
-        );
         
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
         
+        // FIX: Создаем AABB с координатами блока (без вычитания камеры!)
+        // MatrixStack уже содержит трансформацию камеры
+        AxisAlignedBB bb = new AxisAlignedBB(
+            pos.getX(), pos.getY(), pos.getZ(),
+            pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1
+        );
+        
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         
-        // Правильный импорт для MCP mappings
+        // FIX: Правильный импорт для MCP mappings
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
