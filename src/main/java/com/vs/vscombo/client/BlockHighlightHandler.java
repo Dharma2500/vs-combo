@@ -67,7 +67,9 @@ public class BlockHighlightHandler {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableTexture();
-        RenderSystem.lineWidth(2.0F);
+        
+        // FIX: Увеличиваем толщину линии в 10 раз (было 2.0F, стало 20.0F)
+        RenderSystem.lineWidth(20.0F);
         
         // FIX: Правильный расчет позиции камеры для MCP mappings
         Entity renderViewEntity = mc.getRenderViewEntity();
@@ -77,10 +79,14 @@ public class BlockHighlightHandler {
         double viewerY = renderViewEntity.prevPosY + (renderViewEntity.getPosY() - renderViewEntity.prevPosY) * partialTicks;
         double viewerZ = renderViewEntity.prevPosZ + (renderViewEntity.getPosZ() - renderViewEntity.prevPosZ) * partialTicks;
         
-        // FIX: Создаем AABB относительно камеры (правильная позиция блока)
+        // FIX: Создаем AABB с правильными координатами блока относительно камеры
         AxisAlignedBB bb = new AxisAlignedBB(
-            pos.getX() - viewerX, pos.getY() - viewerY, pos.getZ() - viewerZ,
-            pos.getX() + 1 - viewerX, pos.getY() + 1 - viewerY, pos.getZ() + 1 - viewerZ
+            pos.getX() - viewerX, 
+            pos.getY() - viewerY, 
+            pos.getZ() - viewerZ,
+            pos.getX() + 1 - viewerX, 
+            pos.getY() + 1 - viewerY, 
+            pos.getZ() + 1 - viewerZ
         );
         
         int r = (color >> 16) & 0xFF;
@@ -94,33 +100,42 @@ public class BlockHighlightHandler {
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         
         // Рисуем 12 рёбер куба
-        // Нижняя грань
+        // Нижняя грань (4 ребра)
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         
-        // Верхняя грань
+        // Верхняя грань (4 ребра)
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
         
-        // Вертикальные рёбра
+        // Вертикальные рёбра (4 ребра)
         buffer.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
+        
         buffer.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, 255).endVertex();
         buffer.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, 255).endVertex();
         
@@ -133,7 +148,7 @@ public class BlockHighlightHandler {
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // FIX: Частицы летят ОТ ЦЕНТРА БЛОКА наружу в разные стороны
+        // Частицы летят ОТ ЦЕНТРА БЛОКА наружу в разные стороны
         double centerX = pos.getX() + 0.5;
         double centerY = pos.getY() + 0.5;
         double centerZ = pos.getZ() + 0.5;
