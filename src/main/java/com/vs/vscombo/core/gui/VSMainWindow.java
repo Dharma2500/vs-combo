@@ -11,6 +11,7 @@ import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
 import com.vs.vscombo.feature.tabs.MacrosTab;
+import com.vs.vscombo.feature.tabs.BlocksTab;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,10 +43,7 @@ public class VSMainWindow extends Screen {
     
     private int currentDelay = 50;
     private int currentLoop = 1;
-    
-    // FIX: Сохраняем размеры для отслеживания изменений
-    private int lastWidth;
-    private int lastHeight;
+    private boolean isBlocksTabActive = false;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -67,10 +65,6 @@ public class VSMainWindow extends Screen {
 
     @Override
     protected void init() {
-        // FIX: Сохраняем текущие размеры
-        this.lastWidth = this.width;
-        this.lastHeight = this.height;
-        
         panelW = (int)(this.width * WIDTH_RATIO);
         panelH = (int)(this.height * HEIGHT_RATIO);
         panelX = (this.width - panelW) / 2;
@@ -80,6 +74,9 @@ public class VSMainWindow extends Screen {
         contentY = panelY + 25;
         contentW = panelW - SIDEBAR_WIDTH - 10;
         contentH = panelH - 60 - BOTTOM_SECTION_HEIGHT;
+        
+        // FIX: Проверяем, активна ли вкладка Blocks
+        isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
@@ -104,22 +101,14 @@ public class VSMainWindow extends Screen {
         syncFieldsWithTab();
     }
     
-    // FIX: Переопределяем resize для закрытия окна при изменении размера
-    @Override
-    public void resize(Minecraft mc, int width, int height) {
-        // Проверяем, изменился ли размер окна
-        if (width != this.lastWidth || height != this.lastHeight) {
-            // Закрываем окно мода
-            mc.displayGuiScreen(null);
-            isOpen = false;
-            return;
-        }
-        super.resize(mc, width, height);
-    }
-    
     private void switchTab(String id) {
         tabManager.switchTab(id);
+        isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
         syncFieldsWithTab();
+        // FIX: Пересоздаём кнопки для вкладки Blocks
+        if (isBlocksTabActive && tabManager.getActiveTab() instanceof BlocksTab) {
+            initTabButtons();
+        }
     }
     
     private void syncFieldsWithTab() {
@@ -134,6 +123,11 @@ public class VSMainWindow extends Screen {
     
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
+        
+        // FIX: Скрываем нижнюю панель для вкладки Blocks
+        if (isBlocksTabActive) {
+            return;
+        }
         
         clearButton = new Button(panelX + 5, bottomY, 60, 20,
             new StringTextComponent("Clear"), btn -> clearChat());
@@ -209,6 +203,16 @@ public class VSMainWindow extends Screen {
             this.buttons.remove(btn);
         }
         tabButtons.clear();
+        
+        // FIX: Добавляем кнопки для вкладки Blocks
+        if (isBlocksTabActive && tabManager.getActiveTab() instanceof BlocksTab) {
+            List<Button> blockButtons = tabManager.getActiveTab().getButtons(
+                contentX, contentY, contentW, contentH);
+            for (Button btn : blockButtons) {
+                this.addButton(btn);
+                tabButtons.add(btn);
+            }
+        }
     }
 
     @Override
@@ -222,8 +226,11 @@ public class VSMainWindow extends Screen {
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        int bottomSectionY = panelY + panelH - BOTTOM_SECTION_HEIGHT;
-        AbstractGui.fill(matrixStack, panelX, bottomSectionY, panelX + panelW, bottomSectionY + 1, 0xFF555555);
+        // FIX: Рисуем разделитель только для Macros вкладок
+        if (!isBlocksTabActive) {
+            int bottomSectionY = panelY + panelH - BOTTOM_SECTION_HEIGHT;
+            AbstractGui.fill(matrixStack, panelX, bottomSectionY, panelX + panelW, bottomSectionY + 1, 0xFF555555);
+        }
         
         this.font.drawString(matrixStack, "Created by Vitaly_Sokolov", 
                 (float)(panelX + 10), (float)(panelY + 8), TEXT_COLOR);
@@ -233,8 +240,11 @@ public class VSMainWindow extends Screen {
                     contentX, contentY, contentW, contentH);
         }
         
-        if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
-        if (loopField != null) loopField.render(matrixStack, mouseX, mouseY, partialTicks);
+        // FIX: Рендерим поля ввода только для Macros вкладок
+        if (!isBlocksTabActive) {
+            if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
+            if (loopField != null) loopField.render(matrixStack, mouseX, mouseY, partialTicks);
+        }
         
         super.render(matrixStack, mouseX, mouseY, partialTicks);
     }
@@ -246,11 +256,14 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        if (loopField != null && loopField.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
+        // FIX: Обрабатываем ввод только для Macros вкладок
+        if (!isBlocksTabActive) {
+            if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+            if (loopField != null && loopField.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
         }
         
         if (this.tabManager.getActiveTab() != null) {
@@ -268,17 +281,20 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (delayField != null && delayField.isFocused()) {
-            if (codePoint >= '0' && codePoint <= '9') {
-                return delayField.charTyped(codePoint, modifiers);
+        // FIX: Обрабатываем ввод текста только для Macros вкладок
+        if (!isBlocksTabActive) {
+            if (delayField != null && delayField.isFocused()) {
+                if (codePoint >= '0' && codePoint <= '9') {
+                    return delayField.charTyped(codePoint, modifiers);
+                }
+                return true;
             }
-            return true;
-        }
-        if (loopField != null && loopField.isFocused()) {
-            if (codePoint >= '0' && codePoint <= '9') {
-                return loopField.charTyped(codePoint, modifiers);
+            if (loopField != null && loopField.isFocused()) {
+                if (codePoint >= '0' && codePoint <= '9') {
+                    return loopField.charTyped(codePoint, modifiers);
+                }
+                return true;
             }
-            return true;
         }
         
         if (this.tabManager.getActiveTab() != null) {
@@ -291,11 +307,14 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }
-        if (loopField != null && loopField.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        // FIX: Обрабатываем клики только для Macros вкладок
+        if (!isBlocksTabActive) {
+            if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            if (loopField != null && loopField.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
         }
         
         if (this.tabManager.getActiveTab() != null) {
