@@ -80,10 +80,9 @@ public class BlocksTab implements IVSTab {
             btn -> clearAllEffects()
         ));
         
-        // ===== ВТОРОЙ РЯД - ПОРТАЛ/REDSTONE/ДЫМ =====
+        // ===== ВТОРОЙ РЯД - ПОРТАЛ/FLAME/HAPPY_VILLAGER =====
         int secondRowY = startY + buttonHeight + 15;
         
-        // FIX: Кнопка "Портал" вместо "Пурпур"
         tabButtons.add(new Button(
             startX, secondRowY, buttonWidth, buttonHeight,
             new StringTextComponent("Портал"),
@@ -146,27 +145,19 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // ===== ТЕКСТОВАЯ ПОДСКАЗКА ВВЕРХУ =====
-        int textStartY = y + 10;
-        int textLineHeight = 15;
+        // FIX: Убрана текстовая подсказка под кнопками
+        // Оставлены только статусы эффектов
         
-        mc.fontRenderer.drawString(ms, "Используйте кнопки для добавления/изменения", 
-            (float)(x + 10), (float)(textStartY), 0xFFAAAAAA);
-        mc.fontRenderer.drawString(ms, "цвета эффекта на блоках", 
-            (float)(x + 10), (float)(textStartY + textLineHeight), 0xFFAAAAAA);
-        
-        // ===== ТЕКСТ В ДВА СТОЛБЦА =====
         int infoStartY = y + 70;
         int column1X = x + 10;
         int column2X = x + 200;
+        int textLineHeight = 15;
         
-        // Левый столбец - названия эффектов
         mc.fontRenderer.drawString(ms, "Effect 1: Particles", 
             (float)(column1X), (float)(infoStartY), 0xFFE0E0E0);
         mc.fontRenderer.drawString(ms, "Effect 2: Mini Blocks", 
             (float)(column1X), (float)(infoStartY + textLineHeight * 2), 0xFFE0E0E0);
         
-        // Правый столбец - статусы
         if (BlockHighlightHandler.isParticleEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
                 (float)(column2X), (float)(infoStartY), BlockHighlightHandler.getParticleEffectColor());
