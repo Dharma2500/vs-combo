@@ -20,14 +20,13 @@ public class BlockHighlightHandler {
     private static int particleEffectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
-    // ========== ВТОРОЙ ЭФФЕКТ - КАПАЮЩИЕ ЧАСТИЦЫ ==========
+    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/REDSTONE ==========
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
-    private static long lastBlockCycleTime = 0;
-    private static int ticksInCurrentCycle = 0;
+    private static long lastBlockTime = 0;
     
     // ========== КОНСТАНТЫ ==========
-    private static final int COLOR_PURPLE = 0xFF800080;
+    private static final int COLOR_PORTAL = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
     
@@ -53,14 +52,11 @@ public class BlockHighlightHandler {
     // ========== ВТОРОЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
-        ticksInCurrentCycle = 0;
-        lastBlockCycleTime = 0;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
     public static void setBlockEffectColor(int color) {
         blockEffectColor = color;
-        ticksInCurrentCycle = 0;
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
@@ -76,7 +72,6 @@ public class BlockHighlightHandler {
     public static void clearAllEffects() {
         particleEffectEnabled = false;
         blockEffectEnabled = false;
-        ticksInCurrentCycle = 0;
         VSBaseMod.LOGGER.info("All effects cleared");
     }
     
@@ -102,9 +97,10 @@ public class BlockHighlightHandler {
             lastParticleTime = currentTime;
         }
         
-        // Второй эффект - быстрый цикл (0.05с активно, 0.15с пауза)
-        if (blockEffectEnabled) {
-            spawnFastCyclicParticles(mc, pos);
+        // Второй эффект - непрерывно (каждые 100мс)
+        if (blockEffectEnabled && currentTime - lastBlockTime > 100) {
+            spawnBlockParticles(mc, pos);
+            lastBlockTime = currentTime;
         }
     }
     
@@ -147,27 +143,7 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - БЫСТРЫЕ ЦИКЛИЧЕСКИЕ ЧАСТИЦЫ ==========
-    private static void spawnFastCyclicParticles(Minecraft mc, BlockPos pos) {
-        if (mc.world == null) return;
-        
-        long currentTime = System.currentTimeMillis();
-        long elapsedMs = currentTime - lastBlockCycleTime;
-        
-        // Новый цикл каждые 0.2 секунды (200мс)
-        if (elapsedMs >= 200) {
-            lastBlockCycleTime = currentTime;
-            ticksInCurrentCycle = 0;
-        }
-        
-        // Спавним частицы только в первый тик цикла (первые 0.05с = 50мс)
-        if (elapsedMs < 50 && ticksInCurrentCycle == 0) {
-            spawnBlockParticles(mc, pos);
-            ticksInCurrentCycle = 1;
-        }
-    }
-    
-    // ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
+    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/REDSTONE/ДЫМ ==========
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         // 8 углов блока
         double[][] corners = {
@@ -184,11 +160,11 @@ public class BlockHighlightHandler {
         // Выбираем тип частиц в зависимости от цвета
         BasicParticleType particleType;
         
-        // FIX: PORTAL для пурпурного, DRIPPING_LAVA для красного, SMOKE для лайма
+        // FIX: PORTAL для Портал, DUST для Красный, SMOKE для Лайм
         if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
-        } else if (blockEffectColor == COLOR_PURPLE) {
-            particleType = ParticleTypes.PORTAL;           // Пурпур → портал
+            particleType = ParticleTypes.DUST;             // Красный → редстоун пыль
+        } else if (blockEffectColor == COLOR_PORTAL) {
+            particleType = ParticleTypes.PORTAL;           // Портал → портал
         } else {
             particleType = ParticleTypes.SMOKE;            // Лайм → дым
         }
@@ -219,7 +195,6 @@ public class BlockHighlightHandler {
             
             // Создаем 3 частицы на угол
             for (int j = 0; j < 3; j++) {
-                // FIX: Правильное приведение типа для всех частиц
                 mc.world.addParticle(
                     (IParticleData) particleType,
                     startX, startY, startZ,
