@@ -136,7 +136,16 @@ public class BlockHighlightHandler {
         // Получаем тип блока по цвету
         BlockState blockState = getBlockStateForColor(blockEffectColor);
         
-        // 8 углов блока (координаты относительно блока)
+        // 8 углов блока (координаты относительно блока: 0 или 1)
+        // Схема нумерации:
+        //     3-------7
+        //    /|      /|
+        //   2-------6 |
+        //   | |     | |
+        //   | 1-----|-5
+        //   |/      |/
+        //   0-------4
+        
         double[][] corners = {
             {0, 0, 0},  // 0: нижний левый передний
             {1, 0, 0},  // 1: нижний правый передний
@@ -148,13 +157,24 @@ public class BlockHighlightHandler {
             {1, 1, 1}   // 7: верхний правый задний
         };
         
-        // Для каждого угла создаем частицу, летящую к ДРУГОМУ углу
+        // Соседние углы для каждого угла (только по осям X, Y, Z)
+        // Для каждого угла указываем индексы соседних углов (соединенных ребром)
+        int[][] neighbors = {
+            {1, 2, 4},        // 0 → 1 (по X), 0 → 2 (по Y), 0 → 4 (по Z)
+            {0, 3, 5},        // 1 → 0 (по X), 1 → 3 (по Y), 1 → 5 (по Z)
+            {0, 3, 6},        // 2 → 0 (по Y), 2 → 3 (по X), 2 → 6 (по Z)
+            {1, 2, 7},        // 3 → 1 (по Y), 3 → 2 (по X), 3 → 7 (по Z)
+            {0, 5, 6},        // 4 → 0 (по Z), 4 → 5 (по X), 4 → 6 (по Y)
+            {1, 4, 7},        // 5 → 1 (по Z), 5 → 4 (по X), 5 → 7 (по Y)
+            {2, 4, 7},        // 6 → 2 (по Z), 6 → 4 (по Y), 6 → 7 (по X)
+            {3, 5, 6}         // 7 → 3 (по Z), 7 → 5 (по Y), 7 → 6 (по X)
+        };
+        
+        // Для каждого угла создаем частицу, летящую к соседнему углу
         for (int i = 0; i < corners.length; i++) {
-            // Выбираем случайный ЦЕЛЕВОЙ угол (не равный текущему)
-            int targetIndex;
-            do {
-                targetIndex = mc.world.rand.nextInt(8);
-            } while (targetIndex == i);
+            // Выбираем случайного СОСЕДА (не любой угол, а только соединенный ребром)
+            int[] neighborIndices = neighbors[i];
+            int randomNeighbor = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
             
             // Позиция старта (абсолютные координаты мира)
             double startX = pos.getX() + corners[i][0];
@@ -162,11 +182,11 @@ public class BlockHighlightHandler {
             double startZ = pos.getZ() + corners[i][2];
             
             // Позиция цели (абсолютные координаты мира)
-            double targetX = pos.getX() + corners[targetIndex][0];
-            double targetY = pos.getY() + corners[targetIndex][1];
-            double targetZ = pos.getZ() + corners[targetIndex][2];
+            double targetX = pos.getX() + corners[randomNeighbor][0];
+            double targetY = pos.getY() + corners[randomNeighbor][1];
+            double targetZ = pos.getZ() + corners[randomNeighbor][2];
             
-            // Направление ОТ текущего угла К целевому углу
+            // Направление ОТ текущего угла К соседнему углу
             double dirX = targetX - startX;
             double dirY = targetY - startY;
             double dirZ = targetZ - startZ;
@@ -175,13 +195,16 @@ public class BlockHighlightHandler {
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
                 // Делим на длину для нормализации, затем умножаем на скорость
-                dirX = (dirX / length) * 0.2;
-                dirY = (dirY / length) * 0.2;
-                dirZ = (dirZ / length) * 0.2;
+                dirX = (dirX / length) * 0.15;
+                dirY = (dirY / length) * 0.15;
+                dirZ = (dirZ / length) * 0.15;
             }
             
-            // Создаем частицу блока
+            // Создаем частицу блока с уменьшенным размером (в 50 раз меньше)
             BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
+            // Устанавливаем масштаб частицы (0.02 = 1/50 от стандартного размера)
+            particleData = particleData.setScale(0.02f);
+            
             mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
         }
     }
