@@ -24,11 +24,15 @@ public class BlockHighlightHandler {
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
     private static long lastBlockTime = 0;
+    private static long effectCycleStart = 0;
+    private static boolean effectCycleActive = false;
     
-    // ========== ЦВЕТА ==========
+    // ========== КОНСТАНТЫ ==========
     private static final int COLOR_PURPLE = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
+    private static final int EFFECT_DURATION_TICKS = 4;   // 0.2 секунды (20 TPS)
+    private static final int CYCLE_PAUSE_TICKS = 16;      // 0.8 секунды пауза
     
     // ========== ПЕРВЫЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setParticleEffectEnabled(boolean enabled) {
@@ -41,37 +45,30 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Particle effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isParticleEffectEnabled() { 
-        return particleEffectEnabled; 
-    }
-    
-    public static int getParticleEffectColor() { 
-        return particleEffectColor; 
-    }
+    public static boolean isParticleEffectEnabled() { return particleEffectEnabled; }
+    public static int getParticleEffectColor() { return particleEffectColor; }
     
     // ========== ВТОРОЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
+        effectCycleActive = false;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
     public static void setBlockEffectColor(int color) {
         blockEffectColor = color;
+        effectCycleActive = false;
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isBlockEffectEnabled() { 
-        return blockEffectEnabled; 
-    }
-    
-    public static int getBlockEffectColor() { 
-        return blockEffectColor; 
-    }
+    public static boolean isBlockEffectEnabled() { return blockEffectEnabled; }
+    public static int getBlockEffectColor() { return blockEffectColor; }
     
     // ========== ОБЩАЯ ФУНКЦИЯ CLEAR ==========
     public static void clearAllEffects() {
         particleEffectEnabled = false;
         blockEffectEnabled = false;
+        effectCycleActive = false;
         VSBaseMod.LOGGER.info("All effects cleared");
     }
     
@@ -83,13 +80,13 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // FIX: MCP mappings - objectMouseOver (не hitResult!)
         if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
             return;
         }
         
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         long currentTime = System.currentTimeMillis();
+        int currentTick = (int)(currentTime / 50); // Приблизительный номер тика
         
         // Первый эффект - цветные частицы (каждые 100мс)
         if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
@@ -97,10 +94,9 @@ public class BlockHighlightHandler {
             lastParticleTime = currentTime;
         }
         
-        // Второй эффект - капающие частицы (каждые 150мс)
-        if (blockEffectEnabled && currentTime - lastBlockTime > 150) {
-            spawnSmallColoredParticles(mc, pos);
-            lastBlockTime = currentTime;
+        // Второй эффект - циклический (0.2 сек активен, 0.8 сек пауза)
+        if (blockEffectEnabled) {
+            spawnCyclicParticles(mc, pos, currentTick);
         }
     }
     
@@ -143,71 +139,74 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - КАПАЮЩИЕ ЧАСТИЦЫ ==========
-    private static void spawnSmallColoredParticles(Minecraft mc, BlockPos pos) {
+    // ========== ВТОРОЙ ЭФФЕКТ - ЦИКЛИЧЕСКИЕ ЧАСТИЦЫ ==========
+    private static void spawnCyclicParticles(Minecraft mc, BlockPos pos, int currentTick) {
         if (mc.world == null) return;
+        
+        // Управление циклом: 0.2 сек активно, 0.8 сек пауза
+        if (!effectCycleActive) {
+            // Начинаем новый цикл
+            effectCycleStart = currentTick;
+            effectCycleActive = true;
+        }
+        
+        int elapsedTicks = currentTick - (int)effectCycleStart;
+        
+        // Если прошло больше 0.2 секунды (4 тика) + пауза (16 тиков) - перезапускаем
+        if (elapsedTicks > EFFECT_DURATION_TICKS + CYCLE_PAUSE_TICKS) {
+            effectCycleActive = false;
+            return;
+        }
+        
+        // Спавним частицы только в течение первых 0.2 секунды цикла
+        if (elapsedTicks > EFFECT_DURATION_TICKS) {
+            return;
+        }
         
         // 8 углов блока
         double[][] corners = {
-            {0, 0, 0},  // 0
-            {1, 0, 0},  // 1
-            {0, 1, 0},  // 2
-            {1, 1, 0},  // 3
-            {0, 0, 1},  // 4
-            {1, 0, 1},  // 5
-            {0, 1, 1},  // 6
-            {1, 1, 1}   // 7
+            {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+            {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
         };
         
-        // Соседние углы (только по осям X, Y, Z)
+        // Соседние углы (только по осям)
         int[][] neighbors = {
-            {1, 2, 4},   // 0 → 1(X), 2(Y), 4(Z)
-            {0, 3, 5},   // 1 → 0(X), 3(Y), 5(Z)
-            {0, 3, 6},   // 2 → 0(Y), 3(X), 6(Z)
-            {1, 2, 7},   // 3 → 1(Y), 2(X), 7(Z)
-            {0, 5, 6},   // 4 → 0(Z), 5(X), 6(Y)
-            {1, 4, 7},   // 5 → 1(Z), 4(X), 7(Y)
-            {2, 4, 7},   // 6 → 2(Z), 4(Y), 7(X)
-            {3, 5, 6}    // 7 → 3(Z), 5(Y), 6(X)
+            {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
+            {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
         };
         
-        // Выбираем тип частиц в зависимости от цвета
+        // Выбираем тип частиц
         BasicParticleType particleType;
         boolean useColor = false;
         
         if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.DRIPPING_LAVA;      // Красный → лава
+            particleType = ParticleTypes.DRIPPING_LAVA;
             useColor = false;
         } else if (blockEffectColor == COLOR_PURPLE) {
-            particleType = ParticleTypes.DRIPPING_WATER;     // Пурпур → вода
+            particleType = ParticleTypes.DRIPPING_WATER;
             useColor = false;
         } else {
-            particleType = ParticleTypes.ENTITY_EFFECT;      // Лайм → цветные
+            particleType = ParticleTypes.ENTITY_EFFECT;
             useColor = true;
         }
         
-        // Для каждого угла создаем частицы
+        // Спавним частицы из каждого угла
         for (int i = 0; i < corners.length; i++) {
-            // Выбираем случайного соседа
             int[] neighborIndices = neighbors[i];
             int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
             
-            // Позиция старта
             double startX = pos.getX() + corners[i][0];
             double startY = pos.getY() + corners[i][1];
             double startZ = pos.getZ() + corners[i][2];
             
-            // Позиция цели
             double targetX = pos.getX() + corners[targetIndex][0];
             double targetY = pos.getY() + corners[targetIndex][1];
             double targetZ = pos.getZ() + corners[targetIndex][2];
             
-            // Направление ОТ старта К цели
             double dirX = targetX - startX;
             double dirY = targetY - startY;
             double dirZ = targetZ - startZ;
             
-            // Нормализуем и задаем скорость
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
                 dirX = (dirX / length) * 0.12;
@@ -215,17 +214,15 @@ public class BlockHighlightHandler {
                 dirZ = (dirZ / length) * 0.12;
             }
             
-            // Создаем несколько частиц
+            // Создаем 3 частицы на угол
             for (int j = 0; j < 3; j++) {
                 if (useColor) {
-                    // Для цветных частиц передаем RGB
                     mc.world.addParticle(
                         (IParticleData) particleType,
                         startX, startY, startZ,
                         getRed(blockEffectColor), getGreen(blockEffectColor), getBlue(blockEffectColor)
                     );
                 } else {
-                    // Для лавы/воды передаем направление
                     mc.world.addParticle(
                         (IParticleData) particleType,
                         startX, startY, startZ,
