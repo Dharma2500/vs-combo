@@ -129,71 +129,61 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
-    private static void spawnBlockEffect(Minecraft mc, BlockPos pos) {
-        if (mc.world == null) return;
+// ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
+private static void spawnBlockEffect(Minecraft mc, BlockPos pos) {
+    if (mc.world == null) return;
+    
+    // Получаем тип блока по цвету
+    BlockState blockState = getBlockStateForColor(blockEffectColor);
+    
+    // 8 углов блока (координаты относительно блока: 0 или 1)
+    double[][] corners = {
+        {0, 0, 0},  // 0: нижний левый передний
+        {1, 0, 0},  // 1: нижний правый передний
+        {0, 1, 0},  // 2: верхний левый передний
+        {1, 1, 0},  // 3: верхний правый передний
+        {0, 0, 1},  // 4: нижний левый задний
+        {1, 0, 1},  // 5: нижний правый задний
+        {0, 1, 1},  // 6: верхний левый задний
+        {1, 1, 1}   // 7: верхний правый задний
+    };
+    
+    // Для каждого угла создаем частицу, летящую к ДРУГОМУ углу
+    for (int i = 0; i < corners.length; i++) {
+        // Выбираем случайный ЦЕЛЕВОЙ угол (не равный текущему)
+        int targetIndex;
+        do {
+            targetIndex = mc.world.rand.nextInt(8);
+        } while (targetIndex == i);
         
-        // Получаем тип блока по цвету
-        BlockState blockState = getBlockStateForColor(blockEffectColor);
+        // Позиция старта (абсолютные координаты мира)
+        double startX = pos.getX() + corners[i][0];
+        double startY = pos.getY() + corners[i][1];
+        double startZ = pos.getZ() + corners[i][2];
         
-        // 8 углов блока (координаты относительно блока: 0 или 1)
-        double[][] corners = {
-            {0, 0, 0},  // 0: нижний левый передний
-            {1, 0, 0},  // 1: нижний правый передний
-            {0, 1, 0},  // 2: верхний левый передний
-            {1, 1, 0},  // 3: верхний правый передний
-            {0, 0, 1},  // 4: нижний левый задний
-            {1, 0, 1},  // 5: нижний правый задний
-            {0, 1, 1},  // 6: верхний левый задний
-            {1, 1, 1}   // 7: верхний правый задний
-        };
+        // Позиция цели (абсолютные координаты мира)
+        double targetX = pos.getX() + corners[targetIndex][0];
+        double targetY = pos.getY() + corners[targetIndex][1];
+        double targetZ = pos.getZ() + corners[targetIndex][2];
         
-        // Соседние углы для каждого угла (только по осям X, Y, Z)
-        int[][] neighbors = {
-            {1, 2, 4},        // 0 → 1 (по X), 0 → 2 (по Y), 0 → 4 (по Z)
-            {0, 3, 5},        // 1 → 0 (по X), 1 → 3 (по Y), 1 → 5 (по Z)
-            {0, 3, 6},        // 2 → 0 (по Y), 2 → 3 (по X), 2 → 6 (по Z)
-            {1, 2, 7},        // 3 → 1 (по Y), 3 → 2 (по X), 3 → 7 (по Z)
-            {0, 5, 6},        // 4 → 0 (по Z), 4 → 5 (по X), 4 → 6 (по Y)
-            {1, 4, 7},        // 5 → 1 (по Z), 5 → 4 (по X), 5 → 7 (по Y)
-            {2, 4, 7},        // 6 → 2 (по Z), 6 → 4 (по Y), 6 → 7 (по X)
-            {3, 5, 6}         // 7 → 3 (по Z), 7 → 5 (по Y), 7 → 6 (по X)
-        };
+        // Вектор направления ОТ старта К цели
+        double dirX = targetX - startX;
+        double dirY = targetY - startY;
+        double dirZ = targetZ - startZ;
         
-        // Для каждого угла создаем частицу, летящую к соседнему углу
-        for (int i = 0; i < corners.length; i++) {
-            // Выбираем случайного СОСЕДА (не любой угол, а только соединенный ребром)
-            int[] neighborIndices = neighbors[i];
-            int randomNeighbor = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
-            
-            // Позиция старта (абсолютные координаты мира)
-            double startX = pos.getX() + corners[i][0];
-            double startY = pos.getY() + corners[i][1];
-            double startZ = pos.getZ() + corners[i][2];
-            
-            // Позиция цели (абсолютные координаты мира)
-            double targetX = pos.getX() + corners[randomNeighbor][0];
-            double targetY = pos.getY() + corners[randomNeighbor][1];
-            double targetZ = pos.getZ() + corners[randomNeighbor][2];
-            
-            // Направление ОТ текущего угла К соседнему углу
-            double dirX = targetX - startX;
-            double dirY = targetY - startY;
-            double dirZ = targetZ - startZ;
-            
-            // Нормализуем вектор направления и задаем скорость
-            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-            if (length > 0) {
-                dirX = (dirX / length) * 0.15;
-                dirY = (dirY / length) * 0.15;
-                dirZ = (dirZ / length) * 0.15;
-            }
-            
-            // Создаем частицу блока (FIX: убран setScale - не поддерживается в 1.16.5)
-            BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
-            mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
+        // Нормализуем вектор и задаем скорость
+        double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        if (length > 0) {
+            dirX = (dirX / length) * 0.1;
+            dirY = (dirY / length) * 0.1;
+            dirZ = (dirZ / length) * 0.1;
         }
+        
+        // Создаем частицу блока
+        BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
+        mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
     }
+}
     
     // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     private static BlockState getBlockStateForColor(int color) {
