@@ -10,11 +10,9 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
-// FIX: Добавлены импорты
 import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.feature.tabs.MacrosTab;
 import com.vs.vscombo.feature.tabs.BlocksTab;
-import com.vs.vscombo.feature.tabs.AntiChatTab;
 import com.vs.vscombo.client.BlockHighlightHandler;
 
 import java.util.ArrayList;
@@ -48,7 +46,6 @@ public class VSMainWindow extends Screen {
     private int currentDelay = 50;
     private int currentLoop = 1;
     private boolean isBlocksTabActive = false;
-    private boolean isAntiChatTabActive = false;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -81,11 +78,9 @@ public class VSMainWindow extends Screen {
         contentH = panelH - 60 - BOTTOM_SECTION_HEIGHT;
         
         isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
-        isAntiChatTabActive = tabManager.getActiveTab() instanceof AntiChatTab;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
-        // Sidebar buttons
         int buttonY = panelY + 25;
         int buttonSpacing = 25;
         this.addButton(new Button(panelX + 5, buttonY, SIDEBAR_WIDTH - 10, 20,
@@ -101,10 +96,6 @@ public class VSMainWindow extends Screen {
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 5, SIDEBAR_WIDTH - 10, 20,
             new StringTextComponent("Blocks"), btn -> switchTab("blocks")));
         
-        // Кнопка AntiChat под кнопкой Blocks
-        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 6, SIDEBAR_WIDTH - 10, 20,
-            new StringTextComponent("AntiChat"), btn -> switchTab("antichat")));
-        
         initBottomSection();
         initTabButtons();
         syncFieldsWithTab();
@@ -113,7 +104,6 @@ public class VSMainWindow extends Screen {
     private void switchTab(String id) {
         tabManager.switchTab(id);
         isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
-        isAntiChatTabActive = tabManager.getActiveTab() instanceof AntiChatTab;
         syncFieldsWithTab();
         if (isBlocksTabActive && tabManager.getActiveTab() instanceof BlocksTab) {
             initTabButtons();
@@ -153,23 +143,6 @@ public class VSMainWindow extends Screen {
                         VSBaseMod.LOGGER.info("Block effects are active");
                     }
                 });
-            this.addButton(executeButton);
-            
-            return;
-        }
-        
-        // Для вкладки AntiChat - кнопки управляют AntiChat
-        if (isAntiChatTabActive) {
-            clearButton = new Button(panelX + 5, bottomY, 60, 20,
-                new StringTextComponent("Clear"), btn -> {});
-            this.addButton(clearButton);
-            
-            stopButton = new Button(panelX + panelW/2 - 30, bottomY, 60, 20,
-                new StringTextComponent("Stop"), btn -> {});
-            this.addButton(stopButton);
-            
-            executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
-                new StringTextComponent("Execute"), btn -> {});
             this.addButton(executeButton);
             
             return;
@@ -283,7 +256,7 @@ public class VSMainWindow extends Screen {
                     contentX, contentY, contentW, contentH);
         }
         
-        if (!isBlocksTabActive && !isAntiChatTabActive) {
+        if (!isBlocksTabActive) {
             if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
             if (loopField != null) loopField.render(matrixStack, mouseX, mouseY, partialTicks);
         }
@@ -298,7 +271,7 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (!isBlocksTabActive && !isAntiChatTabActive) {
+        if (!isBlocksTabActive) {
             if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
@@ -322,7 +295,7 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (!isBlocksTabActive && !isAntiChatTabActive) {
+        if (!isBlocksTabActive) {
             if (delayField != null && delayField.isFocused()) {
                 if (codePoint >= '0' && codePoint <= '9') {
                     return delayField.charTyped(codePoint, modifiers);
@@ -347,7 +320,7 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!isBlocksTabActive && !isAntiChatTabActive) {
+        if (!isBlocksTabActive) {
             if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
