@@ -15,22 +15,18 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class BlockHighlightHandler {
     
-    // ========== ПЕРВЫЙ ЭФФЕКТ - ЦВЕТНЫЕ ЧАСТИЦЫ ==========
     private static boolean particleEffectEnabled = false;
     private static int particleEffectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
-    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/FLAME/HAPPY_VILLAGER ==========
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
     private static long lastBlockTime = 0;
     
-    // ========== КОНСТАНТЫ ==========
     private static final int COLOR_PORTAL = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
     
-    // ========== ПЕРВЫЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setParticleEffectEnabled(boolean enabled) {
         particleEffectEnabled = enabled;
         VSBaseMod.LOGGER.info("Particle effect {}", enabled ? "enabled" : "disabled");
@@ -41,15 +37,9 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Particle effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isParticleEffectEnabled() { 
-        return particleEffectEnabled; 
-    }
+    public static boolean isParticleEffectEnabled() { return particleEffectEnabled; }
+    public static int getParticleEffectColor() { return particleEffectColor; }
     
-    public static int getParticleEffectColor() { 
-        return particleEffectColor; 
-    }
-    
-    // ========== ВТОРОЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
@@ -60,22 +50,15 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isBlockEffectEnabled() { 
-        return blockEffectEnabled; 
-    }
+    public static boolean isBlockEffectEnabled() { return blockEffectEnabled; }
+    public static int getBlockEffectColor() { return blockEffectColor; }
     
-    public static int getBlockEffectColor() { 
-        return blockEffectColor; 
-    }
-    
-    // ========== ОБЩАЯ ФУНКЦИЯ CLEAR ==========
     public static void clearAllEffects() {
         particleEffectEnabled = false;
         blockEffectEnabled = false;
         VSBaseMod.LOGGER.info("All effects cleared");
     }
     
-    // ========== ОБРАБОТКА СОБЫТИЙ ==========
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -83,7 +66,6 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        // FIX: MCP mappings - objectMouseOver
         if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
             return;
         }
@@ -91,20 +73,17 @@ public class BlockHighlightHandler {
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         long currentTime = System.currentTimeMillis();
         
-        // Первый эффект - цветные частицы (каждые 100мс)
         if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
             spawnParticleEffect(mc, pos);
             lastParticleTime = currentTime;
         }
         
-        // Второй эффект - непрерывно (каждые 100мс)
         if (blockEffectEnabled && currentTime - lastBlockTime > 100) {
             spawnBlockParticles(mc, pos);
             lastBlockTime = currentTime;
         }
     }
     
-    // ========== ПЕРВЫЙ ЭФФЕКТ - ЦВЕТНЫЕ ЧАСТИЦЫ ==========
     private static void spawnParticleEffect(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
@@ -143,33 +122,27 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/FLAME/HAPPY_VILLAGER ==========
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
-        // 8 углов блока
         double[][] corners = {
             {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
             {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
         };
         
-        // Соседние углы (только по осям)
         int[][] neighbors = {
             {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
             {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
         };
         
-        // Выбираем тип частиц в зависимости от цвета
         BasicParticleType particleType;
         
-        // FIX: Используем только BasicParticleType (не DUST!)
         if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.FLAME;              // Красный → пламя
+            particleType = ParticleTypes.FLAME;
         } else if (blockEffectColor == COLOR_PORTAL) {
-            particleType = ParticleTypes.PORTAL;             // Портал → портал
+            particleType = ParticleTypes.PORTAL;
         } else {
-            particleType = ParticleTypes.HAPPY_VILLAGER;     // Лайм → счастливый житель
+            particleType = ParticleTypes.HAPPY_VILLAGER;
         }
         
-        // Спавним частицы из каждого угла
         for (int i = 0; i < corners.length; i++) {
             int[] neighborIndices = neighbors[i];
             int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
@@ -188,23 +161,22 @@ public class BlockHighlightHandler {
             
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
-                dirX = (dirX / length) * 0.12;
-                dirY = (dirY / length) * 0.12;
-                dirZ = (dirZ / length) * 0.12;
+                dirX = (dirX / length) * 0.08;
+                dirY = (dirY / length) * 0.08;
+                dirZ = (dirZ / length) * 0.08;
             }
             
-            // Создаем 3 частицы на угол
-            for (int j = 0; j < 3; j++) {
+            // FIX: Уменьшаем скорость и создаем частицы только на поверхности
+            for (int j = 0; j < 2; j++) {
                 mc.world.addParticle(
                     (IParticleData) particleType,
                     startX, startY, startZ,
-                    dirX, dirY, dirZ
+                    dirX * 0.5, dirY * 0.5, dirZ * 0.5
                 );
             }
         }
     }
     
-    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     private static float getRed(int color) {
         return ((color >> 16) & 0xFF) / 255.0f;
     }
