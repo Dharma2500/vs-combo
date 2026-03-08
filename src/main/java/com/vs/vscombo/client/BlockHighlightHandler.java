@@ -158,78 +158,78 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
-    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
-        // 8 углов блока
-        double[][] corners = {
-            {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-            {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
-        };
+// ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
+private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
+    // 8 углов блока
+    double[][] corners = {
+        {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+        {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
+    };
+    
+    // Соседние углы (только по осям)
+    int[][] neighbors = {
+        {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
+        {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
+    };
+    
+    // Выбираем тип частиц
+    BasicParticleType particleType;
+    boolean useColor = false;
+    
+    // FIX: Заменили FIREWORK на PORTAL для пурпурного цвета
+    if (blockEffectColor == COLOR_RED) {
+        particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
+        useColor = false;
+    } else if (blockEffectColor == COLOR_PURPLE) {
+        particleType = ParticleTypes.PORTAL;           // Пурпур → портал
+        useColor = false;
+    } else {
+        particleType = ParticleTypes.ENTITY_EFFECT;    // Лайм → цветные
+        useColor = true;
+    }
+    
+    // Спавним частицы из каждого угла
+    for (int i = 0; i < corners.length; i++) {
+        int[] neighborIndices = neighbors[i];
+        int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
         
-        // Соседние углы (только по осям)
-        int[][] neighbors = {
-            {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
-            {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
-        };
+        double startX = pos.getX() + corners[i][0];
+        double startY = pos.getY() + corners[i][1];
+        double startZ = pos.getZ() + corners[i][2];
         
-        // Выбираем тип частиц
-        BasicParticleType particleType;
-        boolean useColor = false;
+        double targetX = pos.getX() + corners[targetIndex][0];
+        double targetY = pos.getY() + corners[targetIndex][1];
+        double targetZ = pos.getZ() + corners[targetIndex][2];
         
-        // FIX: Заменили DRIPPING_WATER на FIREWORK для пурпурного цвета
-        if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
-            useColor = false;
-        } else if (blockEffectColor == COLOR_PURPLE) {
-            particleType = ParticleTypes.FIREWORK;         // Пурпур → фейерверк
-            useColor = false;
-        } else {
-            particleType = ParticleTypes.ENTITY_EFFECT;    // Лайм → цветные
-            useColor = true;
+        double dirX = targetX - startX;
+        double dirY = targetY - startY;
+        double dirZ = targetZ - startZ;
+        
+        double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+        if (length > 0) {
+            dirX = (dirX / length) * 0.12;
+            dirY = (dirY / length) * 0.12;
+            dirZ = (dirZ / length) * 0.12;
         }
         
-        // Спавним частицы из каждого угла
-        for (int i = 0; i < corners.length; i++) {
-            int[] neighborIndices = neighbors[i];
-            int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
-            
-            double startX = pos.getX() + corners[i][0];
-            double startY = pos.getY() + corners[i][1];
-            double startZ = pos.getZ() + corners[i][2];
-            
-            double targetX = pos.getX() + corners[targetIndex][0];
-            double targetY = pos.getY() + corners[targetIndex][1];
-            double targetZ = pos.getZ() + corners[targetIndex][2];
-            
-            double dirX = targetX - startX;
-            double dirY = targetY - startY;
-            double dirZ = targetZ - startZ;
-            
-            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-            if (length > 0) {
-                dirX = (dirX / length) * 0.12;
-                dirY = (dirY / length) * 0.12;
-                dirZ = (dirZ / length) * 0.12;
-            }
-            
-            // Создаем 3 частицы на угол
-            for (int j = 0; j < 3; j++) {
-                if (useColor) {
-                    mc.world.addParticle(
-                        (IParticleData) particleType,
-                        startX, startY, startZ,
-                        getRed(blockEffectColor), getGreen(blockEffectColor), getBlue(blockEffectColor)
-                    );
-                } else {
-                    mc.world.addParticle(
-                        (IParticleData) particleType,
-                        startX, startY, startZ,
-                        dirX, dirY, dirZ
-                    );
-                }
+        // Создаем 3 частицы на угол
+        for (int j = 0; j < 3; j++) {
+            if (useColor) {
+                mc.world.addParticle(
+                    (IParticleData) particleType,
+                    startX, startY, startZ,
+                    getRed(blockEffectColor), getGreen(blockEffectColor), getBlue(blockEffectColor)
+                );
+            } else {
+                mc.world.addParticle(
+                    (IParticleData) particleType,
+                    startX, startY, startZ,
+                    dirX, dirY, dirZ
+                );
             }
         }
     }
+}
     
     // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     private static float getRed(int color) {
