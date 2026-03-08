@@ -2,6 +2,8 @@ package com.vs.vscombo.client;
 
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.particles.BasicParticleType;
+import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -170,13 +172,18 @@ public class BlockHighlightHandler {
         };
         
         // Выбираем тип частиц в зависимости от цвета
-        ParticleTypes particleType;
+        BasicParticleType particleType;
+        boolean useColor = false;
+        
         if (blockEffectColor == COLOR_RED) {
             particleType = ParticleTypes.DRIPPING_LAVA;      // Красный → лава
+            useColor = false;
         } else if (blockEffectColor == COLOR_PURPLE) {
             particleType = ParticleTypes.DRIPPING_WATER;     // Пурпур → вода
+            useColor = false;
         } else {
             particleType = ParticleTypes.ENTITY_EFFECT;      // Лайм → цветные
+            useColor = true;
         }
         
         // Для каждого угла создаем частицы
@@ -210,17 +217,17 @@ public class BlockHighlightHandler {
             
             // Создаем несколько частиц
             for (int j = 0; j < 3; j++) {
-                if (particleType == ParticleTypes.ENTITY_EFFECT) {
+                if (useColor) {
                     // Для цветных частиц передаем RGB
                     mc.world.addParticle(
-                        particleType,
+                        (IParticleData) particleType,
                         startX, startY, startZ,
                         getRed(blockEffectColor), getGreen(blockEffectColor), getBlue(blockEffectColor)
                     );
                 } else {
                     // Для лавы/воды передаем направление
                     mc.world.addParticle(
-                        particleType,
+                        (IParticleData) particleType,
                         startX, startY, startZ,
                         dirX, dirY, dirZ
                     );
