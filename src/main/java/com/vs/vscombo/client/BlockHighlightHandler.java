@@ -20,7 +20,7 @@ public class BlockHighlightHandler {
     private static int particleEffectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
-    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/REDSTONE ==========
+    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/FLAME/HAPPY_VILLAGER ==========
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
     private static long lastBlockTime = 0;
@@ -143,7 +143,7 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/REDSTONE/ДЫМ ==========
+    // ========== ВТОРОЙ ЭФФЕКТ - ПОРТАЛ/FLAME/HAPPY_VILLAGER ==========
     private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         // 8 углов блока
         double[][] corners = {
@@ -160,13 +160,13 @@ public class BlockHighlightHandler {
         // Выбираем тип частиц в зависимости от цвета
         BasicParticleType particleType;
         
-        // FIX: PORTAL для Портал, DUST для Красный, SMOKE для Лайм
+        // FIX: Используем только BasicParticleType (не DUST!)
         if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.DUST;             // Красный → редстоун пыль
+            particleType = ParticleTypes.FLAME;              // Красный → пламя
         } else if (blockEffectColor == COLOR_PORTAL) {
-            particleType = ParticleTypes.PORTAL;           // Портал → портал
+            particleType = ParticleTypes.PORTAL;             // Портал → портал
         } else {
-            particleType = ParticleTypes.SMOKE;            // Лайм → дым
+            particleType = ParticleTypes.HAPPY_VILLAGER;     // Лайм → счастливый житель
         }
         
         // Спавним частицы из каждого угла
