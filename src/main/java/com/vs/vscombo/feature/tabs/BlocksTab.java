@@ -145,36 +145,42 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // ===== ТЕКСТ НИЖЕ КНОПОК (внутри красной области) =====
-        int textStartY = y + 70;  // FIX: Подняли текст выше
+        // ===== ТЕКСТОВАЯ ПОДСКАЗКА ВНИЗУ =====
+        int textStartY = y + 140;
         int textLineHeight = 15;
+        
+        // FIX: Добавляем текстовую подсказку
+        mc.fontRenderer.drawString(ms, "Используйте кнопки для добавления/изменения", 
+            (float)(x + 10), (float)(textStartY), 0xFFAAAAAA);
+        mc.fontRenderer.drawString(ms, "цвета эффекта на блоках", 
+            (float)(x + 10), (float)(textStartY + textLineHeight), 0xFFAAAAAA);
         
         // Заголовок первого эффекта
         mc.fontRenderer.drawString(ms, "Effect 1: Particles", 
-            (float)(x + 10), (float)(textStartY), 0xFFE0E0E0);
+            (float)(x + 10), (float)(textStartY + textLineHeight * 2 + 10), 0xFFE0E0E0);
         
         if (BlockHighlightHandler.isParticleEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight), BlockHighlightHandler.getParticleEffectColor());
+                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 10), BlockHighlightHandler.getParticleEffectColor());
         } else {
             mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight), 0xFFAAAAAA);
+                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 10), 0xFFAAAAAA);
         }
         
         // Заголовок второго эффекта
         mc.fontRenderer.drawString(ms, "Effect 2: Mini Blocks", 
-            (float)(x + 10), (float)(textStartY + textLineHeight * 2 + 5), 0xFFE0E0E0);
+            (float)(x + 10), (float)(textStartY + textLineHeight * 4 + 15), 0xFFE0E0E0);
         
         if (BlockHighlightHandler.isBlockEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 5), BlockHighlightHandler.getBlockEffectColor());
+                (float)(x + 10), (float)(textStartY + textLineHeight * 5 + 15), BlockHighlightHandler.getBlockEffectColor());
         } else {
             mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 5), 0xFFAAAAAA);
+                (float)(x + 10), (float)(textStartY + textLineHeight * 5 + 15), 0xFFAAAAAA);
         }
         
         mc.fontRenderer.drawString(ms, "Look at a block", 
-            (float)(x + 10), (float)(textStartY + textLineHeight * 4 + 10), 0xFFAAAAAA);
+            (float)(x + 10), (float)(textStartY + textLineHeight * 6 + 20), 0xFFAAAAAA);
         
         renderButtonStates(ms, x, y);
     }
