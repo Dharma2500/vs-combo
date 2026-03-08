@@ -145,8 +145,8 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // ===== ТЕКСТ НИЖЕ КНОПОК (опущен на 140 пикселей) =====
-        int textStartY = y + 140;
+        // ===== ТЕКСТ ВНУТРИ КРАСНОГО ПРЯМОУГОЛЬНИКА =====
+        int textStartY = y + 50;  // FIX: Подняли текст выше (было 140)
         int textLineHeight = 15;
         
         // Заголовок первого эффекта
