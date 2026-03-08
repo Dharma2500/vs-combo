@@ -19,7 +19,8 @@ public class BlocksTab implements IVSTab {
     protected int x, y, width, height;
     
     protected final List<Button> tabButtons = new ArrayList<>();
-    protected int selectedButton = -1;
+    protected int selectedParticleButton = -1;
+    protected int selectedBlockButton = -1;
 
     public BlocksTab() {}
 
@@ -31,10 +32,16 @@ public class BlocksTab implements IVSTab {
         this.width = width;
         this.height = height;
         
-        if (BlockHighlightHandler.isEffectEnabled()) {
-            selectedButton = getColorButtonIndex(BlockHighlightHandler.getEffectColor());
+        if (BlockHighlightHandler.isParticleEffectEnabled()) {
+            selectedParticleButton = getColorButtonIndex(BlockHighlightHandler.getParticleEffectColor());
         } else {
-            selectedButton = -1;
+            selectedParticleButton = -1;
+        }
+        
+        if (BlockHighlightHandler.isBlockEffectEnabled()) {
+            selectedBlockButton = getColorButtonIndex(BlockHighlightHandler.getBlockEffectColor());
+        } else {
+            selectedBlockButton = -1;
         }
     }
 
@@ -42,55 +49,94 @@ public class BlocksTab implements IVSTab {
     public List<Button> getButtons(int x, int y, int width, int height) {
         tabButtons.clear();
         
-        // 4 кнопки в верхней части
         int buttonWidth = 80;
         int buttonHeight = 20;
         int spacing = 10;
         int startX = x + 10;
         int startY = y + 10;
         
-        // Кнопка Пурпур
+        // ===== ПЕРВЫЙ РЯД - ЧАСТИЦЫ =====
+        // Пурпур
         tabButtons.add(new Button(
             startX, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Пурпур"),
-            btn -> setEffectColor(0xFF800080, 0)
+            btn -> setParticleEffectColor(0xFF800080, 0)
         ));
         
-        // Кнопка Лайм
+        // Лайм
         tabButtons.add(new Button(
             startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Лайм"),
-            btn -> setEffectColor(0xFF00FF00, 1)
+            btn -> setParticleEffectColor(0xFF00FF00, 1)
         ));
         
-        // Кнопка Красный
+        // Красный
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Красный"),
-            btn -> setEffectColor(0xFFFF0000, 2)
+            btn -> setParticleEffectColor(0xFFFF0000, 2)
         ));
         
-        // Кнопка Clear
+        // Clear
         tabButtons.add(new Button(
             startX + (buttonWidth + spacing) * 3, startY, buttonWidth, buttonHeight,
             new StringTextComponent("Clear"),
-            btn -> clearEffect()
+            btn -> clearAllEffects()
+        ));
+        
+        // ===== ВТОРОЙ РЯД - МИНИ БЛОКИ =====
+        int secondRowY = startY + buttonHeight + 15;
+        
+        // Пурпур
+        tabButtons.add(new Button(
+            startX, secondRowY, buttonWidth, buttonHeight,
+            new StringTextComponent("Пурпур"),
+            btn -> setBlockEffectColor(0xFF800080, 0)
+        ));
+        
+        // Лайм
+        tabButtons.add(new Button(
+            startX + buttonWidth + spacing, secondRowY, buttonWidth, buttonHeight,
+            new StringTextComponent("Лайм"),
+            btn -> setBlockEffectColor(0xFF00FF00, 1)
+        ));
+        
+        // Красный
+        tabButtons.add(new Button(
+            startX + (buttonWidth + spacing) * 2, secondRowY, buttonWidth, buttonHeight,
+            new StringTextComponent("Красный"),
+            btn -> setBlockEffectColor(0xFFFF0000, 2)
+        ));
+        
+        // Clear
+        tabButtons.add(new Button(
+            startX + (buttonWidth + spacing) * 3, secondRowY, buttonWidth, buttonHeight,
+            new StringTextComponent("Clear"),
+            btn -> clearAllEffects()
         ));
         
         return tabButtons;
     }
 
-    private void setEffectColor(int color, int buttonIndex) {
-        BlockHighlightHandler.setEffectEnabled(true);
-        BlockHighlightHandler.setEffectColor(color);
-        selectedButton = buttonIndex;
-        VSBaseMod.LOGGER.info("Set effect color to 0x{}", Integer.toHexString(color));
+    private void setParticleEffectColor(int color, int buttonIndex) {
+        BlockHighlightHandler.setParticleEffectEnabled(true);
+        BlockHighlightHandler.setParticleEffectColor(color);
+        selectedParticleButton = buttonIndex;
+        VSBaseMod.LOGGER.info("Set particle effect color to 0x{}", Integer.toHexString(color));
     }
 
-    private void clearEffect() {
-        BlockHighlightHandler.clearEffect();
-        selectedButton = -1;
-        VSBaseMod.LOGGER.info("Cleared effect");
+    private void setBlockEffectColor(int color, int buttonIndex) {
+        BlockHighlightHandler.setBlockEffectEnabled(true);
+        BlockHighlightHandler.setBlockEffectColor(color);
+        selectedBlockButton = buttonIndex;
+        VSBaseMod.LOGGER.info("Set block effect color to 0x{}", Integer.toHexString(color));
+    }
+
+    private void clearAllEffects() {
+        BlockHighlightHandler.clearAllEffects();
+        selectedParticleButton = -1;
+        selectedBlockButton = -1;
+        VSBaseMod.LOGGER.info("Cleared all effects");
     }
     
     private int getColorButtonIndex(int color) {
@@ -107,17 +153,32 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        if (BlockHighlightHandler.isEffectEnabled()) {
-            mc.fontRenderer.drawString(ms, "Effect: ACTIVE", 
-                (float)(x + 10), (float)(y + 50), BlockHighlightHandler.getEffectColor());
-            mc.fontRenderer.drawString(ms, "Look at a block for particles", 
-                (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
+        // Заголовок первого эффекта
+        mc.fontRenderer.drawString(ms, "Effect 1: Particles", 
+            (float)(x + 10), (float)(y + 50), 0xFFE0E0E0);
+        
+        if (BlockHighlightHandler.isParticleEffectEnabled()) {
+            mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
+                (float)(x + 10), (float)(y + 65), BlockHighlightHandler.getParticleEffectColor());
         } else {
-            mc.fontRenderer.drawString(ms, "Effect: INACTIVE", 
-                (float)(x + 10), (float)(y + 50), 0xFFAAAAAA);
-            mc.fontRenderer.drawString(ms, "Click a color button", 
+            mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
                 (float)(x + 10), (float)(y + 65), 0xFFAAAAAA);
         }
+        
+        // Заголовок второго эффекта
+        mc.fontRenderer.drawString(ms, "Effect 2: Mini Blocks", 
+            (float)(x + 10), (float)(y + 85), 0xFFE0E0E0);
+        
+        if (BlockHighlightHandler.isBlockEffectEnabled()) {
+            mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
+                (float)(x + 10), (float)(y + 100), BlockHighlightHandler.getBlockEffectColor());
+        } else {
+            mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
+                (float)(x + 10), (float)(y + 100), 0xFFAAAAAA);
+        }
+        
+        mc.fontRenderer.drawString(ms, "Look at a block", 
+            (float)(x + 10), (float)(y + 115), 0xFFAAAAAA);
         
         renderButtonStates(ms, x, y);
     }
@@ -127,11 +188,20 @@ public class BlocksTab implements IVSTab {
         int spacing = 10;
         int startX = x + 10;
         int startY = y + 10;
+        int secondRowY = startY + 35;
         
-        if (selectedButton >= 0 && selectedButton <= 2) {
-            int btnX = startX + selectedButton * (buttonWidth + spacing);
+        // Подсветка кнопок частиц
+        if (selectedParticleButton >= 0 && selectedParticleButton <= 2) {
+            int btnX = startX + selectedParticleButton * (buttonWidth + spacing);
             AbstractGui.fill(ms, btnX - 2, startY - 2, 
                 btnX + buttonWidth + 2, startY + 22, 0xFFFFFFFF);
+        }
+        
+        // Подсветка кнопок блоков
+        if (selectedBlockButton >= 0 && selectedBlockButton <= 2) {
+            int btnX = startX + selectedBlockButton * (buttonWidth + spacing);
+            AbstractGui.fill(ms, btnX - 2, secondRowY - 2, 
+                btnX + buttonWidth + 2, secondRowY + 22, 0xFFFFFFFF);
         }
     }
 
