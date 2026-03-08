@@ -53,7 +53,8 @@ public class BlocksTab implements IVSTab {
         int buttonHeight = 20;
         int spacing = 10;
         int startX = x + 10;
-        int startY = y + 10;
+        // FIX: Кнопки начинаются ниже (y + 50 вместо y + 10)
+        int startY = y + 50;
         
         // ===== ПЕРВЫЙ РЯД - ЧАСТИЦЫ =====
         tabButtons.add(new Button(
@@ -145,42 +146,43 @@ public class BlocksTab implements IVSTab {
         
         Minecraft mc = Minecraft.getInstance();
         
-        // ===== ТЕКСТОВАЯ ПОДСКАЗКА ВНИЗУ =====
-        int textStartY = y + 140;
+        // ===== ТЕКСТ НАД КНОПКАМИ (y + 10) =====
+        int textStartY = y + 10;
         int textLineHeight = 15;
         
-        // FIX: Добавляем текстовую подсказку
+        // FIX: Текстовая подсказка над кнопками
         mc.fontRenderer.drawString(ms, "Используйте кнопки для добавления/изменения", 
             (float)(x + 10), (float)(textStartY), 0xFFAAAAAA);
         mc.fontRenderer.drawString(ms, "цвета эффекта на блоках", 
             (float)(x + 10), (float)(textStartY + textLineHeight), 0xFFAAAAAA);
         
-        // Заголовок первого эффекта
+        // Заголовок первого эффекта (после кнопок)
+        int afterButtonsY = y + 100;
         mc.fontRenderer.drawString(ms, "Effect 1: Particles", 
-            (float)(x + 10), (float)(textStartY + textLineHeight * 2 + 10), 0xFFE0E0E0);
+            (float)(x + 10), (float)(afterButtonsY), 0xFFE0E0E0);
         
         if (BlockHighlightHandler.isParticleEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 10), BlockHighlightHandler.getParticleEffectColor());
+                (float)(x + 10), (float)(afterButtonsY + textLineHeight), BlockHighlightHandler.getParticleEffectColor());
         } else {
             mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 3 + 10), 0xFFAAAAAA);
+                (float)(x + 10), (float)(afterButtonsY + textLineHeight), 0xFFAAAAAA);
         }
         
         // Заголовок второго эффекта
         mc.fontRenderer.drawString(ms, "Effect 2: Mini Blocks", 
-            (float)(x + 10), (float)(textStartY + textLineHeight * 4 + 15), 0xFFE0E0E0);
+            (float)(x + 10), (float)(afterButtonsY + textLineHeight * 2 + 5), 0xFFE0E0E0);
         
         if (BlockHighlightHandler.isBlockEffectEnabled()) {
             mc.fontRenderer.drawString(ms, "Status: ACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 5 + 15), BlockHighlightHandler.getBlockEffectColor());
+                (float)(x + 10), (float)(afterButtonsY + textLineHeight * 3 + 5), BlockHighlightHandler.getBlockEffectColor());
         } else {
             mc.fontRenderer.drawString(ms, "Status: INACTIVE", 
-                (float)(x + 10), (float)(textStartY + textLineHeight * 5 + 15), 0xFFAAAAAA);
+                (float)(x + 10), (float)(afterButtonsY + textLineHeight * 3 + 5), 0xFFAAAAAA);
         }
         
         mc.fontRenderer.drawString(ms, "Look at a block", 
-            (float)(x + 10), (float)(textStartY + textLineHeight * 6 + 20), 0xFFAAAAAA);
+            (float)(x + 10), (float)(afterButtonsY + textLineHeight * 4 + 10), 0xFFAAAAAA);
         
         renderButtonStates(ms, x, y);
     }
@@ -189,7 +191,7 @@ public class BlocksTab implements IVSTab {
         int buttonWidth = 80;
         int spacing = 10;
         int startX = x + 10;
-        int startY = y + 10;
+        int startY = y + 50;
         int secondRowY = startY + 35;
         
         if (selectedParticleButton >= 0 && selectedParticleButton <= 2) {
