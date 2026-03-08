@@ -137,15 +137,6 @@ public class BlockHighlightHandler {
         BlockState blockState = getBlockStateForColor(blockEffectColor);
         
         // 8 углов блока (координаты относительно блока: 0 или 1)
-        // Схема нумерации:
-        //     3-------7
-        //    /|      /|
-        //   2-------6 |
-        //   | |     | |
-        //   | 1-----|-5
-        //   |/      |/
-        //   0-------4
-        
         double[][] corners = {
             {0, 0, 0},  // 0: нижний левый передний
             {1, 0, 0},  // 1: нижний правый передний
@@ -158,7 +149,6 @@ public class BlockHighlightHandler {
         };
         
         // Соседние углы для каждого угла (только по осям X, Y, Z)
-        // Для каждого угла указываем индексы соседних углов (соединенных ребром)
         int[][] neighbors = {
             {1, 2, 4},        // 0 → 1 (по X), 0 → 2 (по Y), 0 → 4 (по Z)
             {0, 3, 5},        // 1 → 0 (по X), 1 → 3 (по Y), 1 → 5 (по Z)
@@ -194,17 +184,13 @@ public class BlockHighlightHandler {
             // Нормализуем вектор направления и задаем скорость
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
-                // Делим на длину для нормализации, затем умножаем на скорость
                 dirX = (dirX / length) * 0.15;
                 dirY = (dirY / length) * 0.15;
                 dirZ = (dirZ / length) * 0.15;
             }
             
-            // Создаем частицу блока с уменьшенным размером (в 50 раз меньше)
+            // Создаем частицу блока (FIX: убран setScale - не поддерживается в 1.16.5)
             BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
-            // Устанавливаем масштаб частицы (0.02 = 1/50 от стандартного размера)
-            particleData = particleData.setScale(0.02f);
-            
             mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
         }
     }
