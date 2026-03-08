@@ -4,8 +4,7 @@ import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.BlockState;
-import net.minecraft.particles.BasicParticleType;
-import net.minecraft.particles.IParticleData;
+import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -17,12 +16,10 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class BlockHighlightHandler {
     
-    // Первый эффект - частицы
     private static boolean particleEffectEnabled = false;
     private static int particleEffectColor = 0xFF800080;
     private static long lastParticleTime = 0;
     
-    // Второй эффект - мини блоки
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
     private static long lastBlockTime = 0;
@@ -31,7 +28,7 @@ public class BlockHighlightHandler {
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
     
-    // ========== ПЕРВЫЙ ЭФФЕКТ - ЧАСТИЦЫ ==========
+    // ========== ПЕРВЫЙ ЭФФЕКТ - ЦВЕТНЫЕ ЧАСТИЦЫ ==========
     public static void setParticleEffectEnabled(boolean enabled) {
         particleEffectEnabled = enabled;
         VSBaseMod.LOGGER.info("Particle effect {}", enabled ? "enabled" : "disabled");
@@ -80,7 +77,7 @@ public class BlockHighlightHandler {
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         long currentTime = System.currentTimeMillis();
         
-        // Первый эффект - частицы (каждые 100мс)
+        // Первый эффект - цветные частицы (каждые 100мс)
         if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
             spawnParticleEffect(mc, pos);
             lastParticleTime = currentTime;
@@ -93,7 +90,7 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ПЕРВЫЙ ЭФФЕКТ - ЧАСТИЦЫ ==========
+    // ========== ПЕРВЫЙ ЭФФЕКТ - ЦВЕТНЫЕ ЧАСТИЦЫ ==========
     private static void spawnParticleEffect(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
@@ -143,7 +140,6 @@ public class BlockHighlightHandler {
         double centerY = pos.getY() + 0.5;
         double centerZ = pos.getZ() + 0.5;
         
-        // 8 углов блока
         double[][] corners = {
             {pos.getX(), pos.getY(), pos.getZ()},
             {pos.getX() + 1, pos.getY(), pos.getZ()},
@@ -156,25 +152,20 @@ public class BlockHighlightHandler {
         };
         
         for (double[] corner : corners) {
-            // Направление от центра к углу
             double dirX = corner[0] - centerX;
             double dirY = corner[1] - centerY;
             double dirZ = corner[2] - centerZ;
             
-            // Нормализуем и добавляем скорость
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
                 dirX = (dirX / length) * 0.15;
-                dirY = (dirY / length) * 0.15 + 0.1; // Немного вверх
+                dirY = (dirY / length) * 0.15 + 0.1;
                 dirZ = (dirZ / length) * 0.15;
             }
             
-            // Спавним частицу блока (BLOCK_MARKER)
-            mc.world.addParticle(
-                ParticleTypes.BLOCK_MARKER,
-                corner[0], corner[1], corner[2],
-                dirX, dirY, dirZ
-            );
+            // FIX: Используем BlockParticleData для Forge 1.16.5
+            BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
+            mc.world.addParticle(particleData, corner[0], corner[1], corner[2], dirX, dirY, dirZ);
         }
     }
     
