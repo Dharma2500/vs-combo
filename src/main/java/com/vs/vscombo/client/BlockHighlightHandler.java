@@ -2,6 +2,8 @@ package com.vs.vscombo.client;
 
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.BlockState;
 import net.minecraft.particles.BasicParticleType;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.particles.ParticleTypes;
@@ -15,86 +17,106 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = VSBaseMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class BlockHighlightHandler {
     
-    private static boolean effectEnabled = false;
-    private static int effectColor = 0xFF800080;
+    // Первый эффект - частицы
+    private static boolean particleEffectEnabled = false;
+    private static int particleEffectColor = 0xFF800080;
     private static long lastParticleTime = 0;
+    
+    // Второй эффект - мини блоки
+    private static boolean blockEffectEnabled = false;
+    private static int blockEffectColor = 0xFF800080;
+    private static long lastBlockTime = 0;
     
     private static final int COLOR_PURPLE = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
     
-    public static void setEffectEnabled(boolean enabled) {
-        effectEnabled = enabled;
+    // ========== ПЕРВЫЙ ЭФФЕКТ - ЧАСТИЦЫ ==========
+    public static void setParticleEffectEnabled(boolean enabled) {
+        particleEffectEnabled = enabled;
+        VSBaseMod.LOGGER.info("Particle effect {}", enabled ? "enabled" : "disabled");
+    }
+    
+    public static void setParticleEffectColor(int color) {
+        particleEffectColor = color;
+        VSBaseMod.LOGGER.info("Particle effect color set to 0x{}", Integer.toHexString(color));
+    }
+    
+    public static boolean isParticleEffectEnabled() { return particleEffectEnabled; }
+    public static int getParticleEffectColor() { return particleEffectColor; }
+    
+    // ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
+    public static void setBlockEffectEnabled(boolean enabled) {
+        blockEffectEnabled = enabled;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
-    public static void setEffectColor(int color) {
-        effectColor = color;
+    public static void setBlockEffectColor(int color) {
+        blockEffectColor = color;
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isEffectEnabled() { return effectEnabled; }
-    public static int getEffectColor() { return effectColor; }
-    public static void clearEffect() { effectEnabled = false; }
+    public static boolean isBlockEffectEnabled() { return blockEffectEnabled; }
+    public static int getBlockEffectColor() { return blockEffectColor; }
+    
+    // ========== ОБЩАЯ ФУНКЦИЯ CLEAR ==========
+    public static void clearAllEffects() {
+        particleEffectEnabled = false;
+        blockEffectEnabled = false;
+        VSBaseMod.LOGGER.info("All effects cleared");
+    }
     
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (!effectEnabled || event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickEvent.Phase.END) return;
         
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
+        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
             return;
         }
         
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
-        
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastParticleTime > 100) {
-            spawnColoredParticles(mc, pos);
+        
+        // Первый эффект - частицы (каждые 100мс)
+        if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
+            spawnParticleEffect(mc, pos);
             lastParticleTime = currentTime;
+        }
+        
+        // Второй эффект - мини блоки (каждые 150мс)
+        if (blockEffectEnabled && currentTime - lastBlockTime > 150) {
+            spawnBlockEffect(mc, pos);
+            lastBlockTime = currentTime;
         }
     }
     
-    private static void spawnColoredParticles(Minecraft mc, BlockPos pos) {
+    // ========== ПЕРВЫЙ ЭФФЕКТ - ЧАСТИЦЫ ==========
+    private static void spawnParticleEffect(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // Центр блока
         double centerX = pos.getX() + 0.5;
         double centerY = pos.getY() + 0.5;
         double centerZ = pos.getZ() + 0.5;
         
-        // Извлекаем RGB компоненты из цвета
-        int r = (effectColor >> 16) & 0xFF;
-        int g = (effectColor >> 8) & 0xFF;
-        int b = effectColor & 0xFF;
-        
-        // Нормализуем цвета (0.0 - 1.0)
-        float red = r / 255.0f;
-        float green = g / 255.0f;
-        float blue = b / 255.0f;
-        
-        // 8 углов блока
         double[][] corners = {
-            {pos.getX(), pos.getY(), pos.getZ()},                    // 0,0,0
-            {pos.getX() + 1, pos.getY(), pos.getZ()},                // 1,0,0
-            {pos.getX(), pos.getY() + 1, pos.getZ()},                // 0,1,0
-            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},            // 1,1,0
-            {pos.getX(), pos.getY(), pos.getZ() + 1},                // 0,0,1
-            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},            // 1,0,1
-            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},            // 0,1,1
-            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}         // 1,1,1
+            {pos.getX(), pos.getY(), pos.getZ()},
+            {pos.getX() + 1, pos.getY(), pos.getZ()},
+            {pos.getX(), pos.getY() + 1, pos.getZ()},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},
+            {pos.getX(), pos.getY(), pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},
+            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}
         };
         
-        // Спавним частицы от каждого угла
         for (double[] corner : corners) {
-            // Направление ОТ центра блока к углу
             double dirX = corner[0] - centerX;
             double dirY = corner[1] - centerY;
             double dirZ = corner[2] - centerZ;
             
-            // Нормализуем и усиливаем скорость
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
                 dirX = (dirX / length) * 0.3;
@@ -102,12 +124,81 @@ public class BlockHighlightHandler {
                 dirZ = (dirZ / length) * 0.3;
             }
             
-            // Спавним цветную частицу (ENTITY_EFFECT поддерживает цвет)
             mc.world.addParticle(
                 ParticleTypes.ENTITY_EFFECT,
                 corner[0], corner[1], corner[2],
-                red, green, blue
+                getRed(particleEffectColor), getGreen(particleEffectColor), getBlue(particleEffectColor)
             );
         }
+    }
+    
+    // ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
+    private static void spawnBlockEffect(Minecraft mc, BlockPos pos) {
+        if (mc.world == null) return;
+        
+        // Получаем тип блока по цвету
+        BlockState blockState = getBlockStateForColor(blockEffectColor);
+        
+        double centerX = pos.getX() + 0.5;
+        double centerY = pos.getY() + 0.5;
+        double centerZ = pos.getZ() + 0.5;
+        
+        // 8 углов блока
+        double[][] corners = {
+            {pos.getX(), pos.getY(), pos.getZ()},
+            {pos.getX() + 1, pos.getY(), pos.getZ()},
+            {pos.getX(), pos.getY() + 1, pos.getZ()},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},
+            {pos.getX(), pos.getY(), pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},
+            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}
+        };
+        
+        for (double[] corner : corners) {
+            // Направление от центра к углу
+            double dirX = corner[0] - centerX;
+            double dirY = corner[1] - centerY;
+            double dirZ = corner[2] - centerZ;
+            
+            // Нормализуем и добавляем скорость
+            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            if (length > 0) {
+                dirX = (dirX / length) * 0.15;
+                dirY = (dirY / length) * 0.15 + 0.1; // Немного вверх
+                dirZ = (dirZ / length) * 0.15;
+            }
+            
+            // Спавним частицу блока (BLOCK_MARKER)
+            mc.world.addParticle(
+                ParticleTypes.BLOCK_MARKER,
+                corner[0], corner[1], corner[2],
+                dirX, dirY, dirZ
+            );
+        }
+    }
+    
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    private static BlockState getBlockStateForColor(int color) {
+        if (color == COLOR_PURPLE) {
+            return Blocks.PURPLE_CONCRETE.getDefaultState();
+        } else if (color == COLOR_LIME) {
+            return Blocks.LIME_CONCRETE.getDefaultState();
+        } else if (color == COLOR_RED) {
+            return Blocks.RED_CONCRETE.getDefaultState();
+        }
+        return Blocks.PURPLE_CONCRETE.getDefaultState();
+    }
+    
+    private static float getRed(int color) {
+        return ((color >> 16) & 0xFF) / 255.0f;
+    }
+    
+    private static float getGreen(int color) {
+        return ((color >> 8) & 0xFF) / 255.0f;
+    }
+    
+    private static float getBlue(int color) {
+        return (color & 0xFF) / 255.0f;
     }
 }
