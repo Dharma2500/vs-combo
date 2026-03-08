@@ -176,14 +176,15 @@ public class BlockHighlightHandler {
         BasicParticleType particleType;
         boolean useColor = false;
         
+        // FIX: Заменили DRIPPING_WATER на FIREWORK для пурпурного цвета
         if (blockEffectColor == COLOR_RED) {
-            particleType = ParticleTypes.DRIPPING_LAVA;
+            particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
             useColor = false;
         } else if (blockEffectColor == COLOR_PURPLE) {
-            particleType = ParticleTypes.DRIPPING_WATER;
+            particleType = ParticleTypes.FIREWORK;         // Пурпур → фейерверк
             useColor = false;
         } else {
-            particleType = ParticleTypes.ENTITY_EFFECT;
+            particleType = ParticleTypes.ENTITY_EFFECT;    // Лайм → цветные
             useColor = true;
         }
         
