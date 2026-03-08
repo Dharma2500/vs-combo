@@ -19,9 +19,10 @@ public class TabManager {
     }
 
     private void initializeTabs() {
-        // Macros вкладки - конструктор без параметров
+        // Macros вкладки - конструктор требует String параметр
         for (int i = 1; i <= 5; i++) {
-            tabs.put("macros" + i, new MacrosTab());
+            String tabId = "macros" + i;
+            tabs.put(tabId, new MacrosTab(tabId));
         }
         
         // Вкладка Blocks
