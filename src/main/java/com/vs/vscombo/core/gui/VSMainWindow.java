@@ -12,6 +12,8 @@ import org.lwjgl.glfw.GLFW;
 
 import com.vs.vscombo.feature.tabs.MacrosTab;
 import com.vs.vscombo.feature.tabs.BlocksTab;
+import com.vs.vscombo.feature.tabs.AntiChatTab;
+import com.vs.vscombo.client.BlockHighlightHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +46,7 @@ public class VSMainWindow extends Screen {
     private int currentDelay = 50;
     private int currentLoop = 1;
     private boolean isBlocksTabActive = false;
+    private boolean isAntiChatTabActive = false;
 
     private VSMainWindow() {
         super(new StringTextComponent("Vitaly_Sokolov Universe"));
@@ -76,6 +79,7 @@ public class VSMainWindow extends Screen {
         contentH = panelH - 60 - BOTTOM_SECTION_HEIGHT;
         
         isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
+        isAntiChatTabActive = tabManager.getActiveTab() instanceof AntiChatTab;
         
         this.tabManager.init(panelX, panelY, panelW, panelH);
         
@@ -95,6 +99,10 @@ public class VSMainWindow extends Screen {
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 5, SIDEBAR_WIDTH - 10, 20,
             new StringTextComponent("Blocks"), btn -> switchTab("blocks")));
         
+        // FIX: Кнопка AntiChat под кнопкой Blocks
+        this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 6, SIDEBAR_WIDTH - 10, 20,
+            new StringTextComponent("AntiChat"), btn -> switchTab("antichat")));
+        
         initBottomSection();
         initTabButtons();
         syncFieldsWithTab();
@@ -103,6 +111,7 @@ public class VSMainWindow extends Screen {
     private void switchTab(String id) {
         tabManager.switchTab(id);
         isBlocksTabActive = tabManager.getActiveTab() instanceof BlocksTab;
+        isAntiChatTabActive = tabManager.getActiveTab() instanceof AntiChatTab;
         syncFieldsWithTab();
         if (isBlocksTabActive && tabManager.getActiveTab() instanceof BlocksTab) {
             initTabButtons();
@@ -122,11 +131,55 @@ public class VSMainWindow extends Screen {
     private void initBottomSection() {
         int bottomY = panelY + panelH - BOTTOM_SECTION_HEIGHT + 10;
         
-        // Скрываем нижние кнопки для вкладки Blocks
+        // Для вкладки Blocks - кнопки управляют эффектами
         if (isBlocksTabActive) {
+            clearButton = new Button(panelX + 5, bottomY, 60, 20,
+                new StringTextComponent("Clear"), btn -> {
+                    BlockHighlightHandler.clearAllEffects();
+                });
+            this.addButton(clearButton);
+            
+            stopButton = new Button(panelX + panelW/2 - 30, bottomY, 60, 20,
+                new StringTextComponent("Stop"), btn -> {
+                    BlockHighlightHandler.clearAllEffects();
+                });
+            this.addButton(stopButton);
+            
+            executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
+                new StringTextComponent("Execute"), btn -> {
+                    if (BlockHighlightHandler.isBlockEffectEnabled()) {
+                        VSBaseMod.LOGGER.info("Block effects are active");
+                    }
+                });
+            this.addButton(executeButton);
+            
             return;
         }
         
+        // Для вкладки AntiChat - кнопки управляют AntiChat
+        if (isAntiChatTabActive) {
+            clearButton = new Button(panelX + 5, bottomY, 60, 20,
+                new StringTextComponent("Clear"), btn -> {
+                    // Очистить настройки AntiChat
+                });
+            this.addButton(clearButton);
+            
+            stopButton = new Button(panelX + panelW/2 - 30, bottomY, 60, 20,
+                new StringTextComponent("Stop"), btn -> {
+                    // Остановить AntiChat
+                });
+            this.addButton(stopButton);
+            
+            executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
+                new StringTextComponent("Execute"), btn -> {
+                    // Применить настройки AntiChat
+                });
+            this.addButton(executeButton);
+            
+            return;
+        }
+        
+        // Для Macros вкладок - стандартные функции
         clearButton = new Button(panelX + 5, bottomY, 60, 20,
             new StringTextComponent("Clear"), btn -> clearChat());
         this.addButton(clearButton);
@@ -223,7 +276,6 @@ public class VSMainWindow extends Screen {
         AbstractGui.fill(matrixStack, panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
         AbstractGui.fill(matrixStack, panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
         
-        // Разделитель на всех вкладках
         int bottomSectionY = panelY + panelH - BOTTOM_SECTION_HEIGHT;
         AbstractGui.fill(matrixStack, panelX, bottomSectionY, panelX + panelW, bottomSectionY + 1, 0xFF555555);
         
@@ -235,8 +287,7 @@ public class VSMainWindow extends Screen {
                     contentX, contentY, contentW, contentH);
         }
         
-        // Поля ввода только для Macros вкладок
-        if (!isBlocksTabActive) {
+        if (!isBlocksTabActive && !isAntiChatTabActive) {
             if (delayField != null) delayField.render(matrixStack, mouseX, mouseY, partialTicks);
             if (loopField != null) loopField.render(matrixStack, mouseX, mouseY, partialTicks);
         }
@@ -251,7 +302,7 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (!isBlocksTabActive) {
+        if (!isBlocksTabActive && !isAntiChatTabActive) {
             if (delayField != null && delayField.keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
@@ -275,7 +326,7 @@ public class VSMainWindow extends Screen {
             return true;
         }
         
-        if (!isBlocksTabActive) {
+        if (!isBlocksTabActive && !isAntiChatTabActive) {
             if (delayField != null && delayField.isFocused()) {
                 if (codePoint >= '0' && codePoint <= '9') {
                     return delayField.charTyped(codePoint, modifiers);
@@ -300,7 +351,7 @@ public class VSMainWindow extends Screen {
     
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!isBlocksTabActive) {
+        if (!isBlocksTabActive && !isAntiChatTabActive) {
             if (delayField != null && delayField.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
