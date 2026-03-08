@@ -2,7 +2,6 @@ package com.vs.vscombo.core.gui;
 
 import com.vs.vscombo.feature.tabs.MacrosTab;
 import com.vs.vscombo.feature.tabs.BlocksTab;
-import com.vs.vscombo.feature.tabs.AntiChatTab;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,17 +18,15 @@ public class TabManager {
     }
 
     private void initializeTabs() {
-        // Macros вкладки - конструктор требует String параметр
-        for (int i = 1; i <= 5; i++) {
-            String tabId = "macros" + i;
-            tabs.put(tabId, new MacrosTab(tabId));
-        }
+        // Macros вкладки
+        tabs.put("macros1", new MacrosTab("macros1"));
+        tabs.put("macros2", new MacrosTab("macros2"));
+        tabs.put("macros3", new MacrosTab("macros3"));
+        tabs.put("macros4", new MacrosTab("macros4"));
+        tabs.put("macros5", new MacrosTab("macros5"));
         
         // Вкладка Blocks
         tabs.put("blocks", new BlocksTab());
-        
-        // Вкладка AntiChat
-        tabs.put("antichat", new AntiChatTab());
         
         // Активная вкладка по умолчанию
         activeTab = tabs.get("macros1");
