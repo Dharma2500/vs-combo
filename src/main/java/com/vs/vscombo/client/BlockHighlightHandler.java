@@ -2,9 +2,6 @@ package com.vs.vscombo.client;
 
 import com.vs.vscombo.VSBaseMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.BlockState;
-import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -42,7 +39,7 @@ public class BlockHighlightHandler {
     public static boolean isParticleEffectEnabled() { return particleEffectEnabled; }
     public static int getParticleEffectColor() { return particleEffectColor; }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
+    // ========== ВТОРОЙ ЭФФЕКТ - МАЛЕНЬКИЕ ЦВЕТНЫЕ ЧАСТИЦЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
@@ -70,7 +67,7 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
-        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
+        if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != net.minecraft.util.math.BlockRayTraceResult.Type.BLOCK) {
             return;
         }
         
@@ -83,9 +80,9 @@ public class BlockHighlightHandler {
             lastParticleTime = currentTime;
         }
         
-        // Второй эффект - мини блоки (каждые 150мс)
+        // Второй эффект - маленькие цветные частицы (каждые 150мс)
         if (blockEffectEnabled && currentTime - lastBlockTime > 150) {
-            spawnBlockEffect(mc, pos);
+            spawnSmallColoredParticles(mc, pos);
             lastBlockTime = currentTime;
         }
     }
@@ -129,74 +126,75 @@ public class BlockHighlightHandler {
         }
     }
     
-// ========== ВТОРОЙ ЭФФЕКТ - МИНИ БЛОКИ ==========
-private static void spawnBlockEffect(Minecraft mc, BlockPos pos) {
-    if (mc.world == null) return;
-    
-    // Получаем тип блока по цвету
-    BlockState blockState = getBlockStateForColor(blockEffectColor);
-    
-    // 8 углов блока (координаты относительно блока: 0 или 1)
-    double[][] corners = {
-        {0, 0, 0},  // 0: нижний левый передний
-        {1, 0, 0},  // 1: нижний правый передний
-        {0, 1, 0},  // 2: верхний левый передний
-        {1, 1, 0},  // 3: верхний правый передний
-        {0, 0, 1},  // 4: нижний левый задний
-        {1, 0, 1},  // 5: нижний правый задний
-        {0, 1, 1},  // 6: верхний левый задний
-        {1, 1, 1}   // 7: верхний правый задний
-    };
-    
-    // Для каждого угла создаем частицу, летящую к ДРУГОМУ углу
-    for (int i = 0; i < corners.length; i++) {
-        // Выбираем случайный ЦЕЛЕВОЙ угол (не равный текущему)
-        int targetIndex;
-        do {
-            targetIndex = mc.world.rand.nextInt(8);
-        } while (targetIndex == i);
+    // ========== ВТОРОЙ ЭФФЕКТ - МАЛЕНЬКИЕ ЦВЕТНЫЕ ЧАСТИЦЫ ==========
+    private static void spawnSmallColoredParticles(Minecraft mc, BlockPos pos) {
+        if (mc.world == null) return;
         
-        // Позиция старта (абсолютные координаты мира)
-        double startX = pos.getX() + corners[i][0];
-        double startY = pos.getY() + corners[i][1];
-        double startZ = pos.getZ() + corners[i][2];
+        // 8 углов блока
+        double[][] corners = {
+            {0, 0, 0},  // 0
+            {1, 0, 0},  // 1
+            {0, 1, 0},  // 2
+            {1, 1, 0},  // 3
+            {0, 0, 1},  // 4
+            {1, 0, 1},  // 5
+            {0, 1, 1},  // 6
+            {1, 1, 1}   // 7
+        };
         
-        // Позиция цели (абсолютные координаты мира)
-        double targetX = pos.getX() + corners[targetIndex][0];
-        double targetY = pos.getY() + corners[targetIndex][1];
-        double targetZ = pos.getZ() + corners[targetIndex][2];
+        // Соседние углы (только по осям)
+        int[][] neighbors = {
+            {1, 2, 4},   // 0 → 1(X), 2(Y), 4(Z)
+            {0, 3, 5},   // 1 → 0(X), 3(Y), 5(Z)
+            {0, 3, 6},   // 2 → 0(Y), 3(X), 6(Z)
+            {1, 2, 7},   // 3 → 1(Y), 2(X), 7(Z)
+            {0, 5, 6},   // 4 → 0(Z), 5(X), 6(Y)
+            {1, 4, 7},   // 5 → 1(Z), 4(X), 7(Y)
+            {2, 4, 7},   // 6 → 2(Z), 4(Y), 7(X)
+            {3, 5, 6}    // 7 → 3(Z), 5(Y), 6(X)
+        };
         
-        // Вектор направления ОТ старта К цели
-        double dirX = targetX - startX;
-        double dirY = targetY - startY;
-        double dirZ = targetZ - startZ;
-        
-        // Нормализуем вектор и задаем скорость
-        double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-        if (length > 0) {
-            dirX = (dirX / length) * 0.1;
-            dirY = (dirY / length) * 0.1;
-            dirZ = (dirZ / length) * 0.1;
+        // Для каждого угла создаем несколько маленьких частиц
+        for (int i = 0; i < corners.length; i++) {
+            // Выбираем случайного соседа
+            int[] neighborIndices = neighbors[i];
+            int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
+            
+            // Позиция старта
+            double startX = pos.getX() + corners[i][0];
+            double startY = pos.getY() + corners[i][1];
+            double startZ = pos.getZ() + corners[i][2];
+            
+            // Позиция цели
+            double targetX = pos.getX() + corners[targetIndex][0];
+            double targetY = pos.getY() + corners[targetIndex][1];
+            double targetZ = pos.getZ() + corners[targetIndex][2];
+            
+            // Направление
+            double dirX = targetX - startX;
+            double dirY = targetY - startY;
+            double dirZ = targetZ - startZ;
+            
+            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            if (length > 0) {
+                dirX = (dirX / length) * 0.08;
+                dirY = (dirY / length) * 0.08;
+                dirZ = (dirZ / length) * 0.08;
+            }
+            
+            // Создаем несколько маленьких цветных частиц (вместо одной большой)
+            for (int j = 0; j < 3; j++) {
+                // ENTITY_EFFECT - маленькие цветные частицы
+                mc.world.addParticle(
+                    ParticleTypes.ENTITY_EFFECT,
+                    startX, startY, startZ,
+                    dirX, dirY, dirZ
+                );
+            }
         }
-        
-        // Создаем частицу блока
-        BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
-        mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
     }
-}
     
     // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-    private static BlockState getBlockStateForColor(int color) {
-        if (color == COLOR_PURPLE) {
-            return Blocks.PURPLE_CONCRETE.getDefaultState();
-        } else if (color == COLOR_LIME) {
-            return Blocks.LIME_CONCRETE.getDefaultState();
-        } else if (color == COLOR_RED) {
-            return Blocks.RED_CONCRETE.getDefaultState();
-        }
-        return Blocks.PURPLE_CONCRETE.getDefaultState();
-    }
-    
     private static float getRed(int color) {
         return ((color >> 16) & 0xFF) / 255.0f;
     }
