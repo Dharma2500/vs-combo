@@ -23,6 +23,12 @@ public class BlockHighlightHandler {
     private static int blockEffectColor = 0xFF800080;
     private static long lastBlockTime = 0;
     
+    // ========== ДЛЯ ЭФФЕКТА СХЛОПЫВАНИЯ ==========
+    private static BlockPos lastTargetBlock = null;
+    private static long collapseStartTime = 0;
+    private static boolean isCollapsing = false;
+    private static int collapseTicks = 0;
+    
     private static final int COLOR_PORTAL = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
@@ -42,6 +48,10 @@ public class BlockHighlightHandler {
     
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
+        if (!enabled) {
+            lastTargetBlock = null;
+            isCollapsing = false;
+        }
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
@@ -56,6 +66,8 @@ public class BlockHighlightHandler {
     public static void clearAllEffects() {
         particleEffectEnabled = false;
         blockEffectEnabled = false;
+        lastTargetBlock = null;
+        isCollapsing = false;
         VSBaseMod.LOGGER.info("All effects cleared");
     }
     
@@ -70,18 +82,50 @@ public class BlockHighlightHandler {
             return;
         }
         
-        BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
+        BlockPos currentPos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         long currentTime = System.currentTimeMillis();
         
+        // ========== ПРОВЕРКА НА СХЛОПЫВАНИЕ ==========
+        if (blockEffectEnabled && blockEffectColor == COLOR_PORTAL) {
+            if (lastTargetBlock != null && !lastTargetBlock.equals(currentPos)) {
+                // Игрок отвел прицел от блока - запускаем схлопывание
+                startCollapse(lastTargetBlock);
+            }
+            lastTargetBlock = currentPos;
+        } else {
+            lastTargetBlock = null;
+        }
+        
+        // ========== ЭФФЕКТ СХЛОПЫВАНИЯ ==========
+        if (isCollapsing && lastTargetBlock != null) {
+            spawnPortalCollapse(mc, lastTargetBlock);
+            collapseTicks++;
+            
+            // Схлопывание длится 1 секунду (20 тиков)
+            if (collapseTicks > 20) {
+                isCollapsing = false;
+                collapseTicks = 0;
+                lastTargetBlock = null;
+            }
+        }
+        
+        // ========== ОБЫЧНЫЙ ЭФФЕКТ ==========
         if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
-            spawnParticleEffect(mc, pos);
+            spawnParticleEffect(mc, currentPos);
             lastParticleTime = currentTime;
         }
         
         if (blockEffectEnabled && currentTime - lastBlockTime > 100) {
-            spawnBlockParticles(mc, pos);
+            spawnBlockParticles(mc, currentPos);
             lastBlockTime = currentTime;
         }
+    }
+    
+    private static void startCollapse(BlockPos pos) {
+        isCollapsing = true;
+        collapseStartTime = System.currentTimeMillis();
+        collapseTicks = 0;
+        VSBaseMod.LOGGER.info("Portal collapsing at {}", pos);
     }
     
     private static void spawnParticleEffect(Minecraft mc, BlockPos pos) {
@@ -166,12 +210,57 @@ public class BlockHighlightHandler {
                 dirZ = (dirZ / length) * 0.08;
             }
             
-            // FIX: Уменьшаем скорость и создаем частицы только на поверхности
             for (int j = 0; j < 2; j++) {
                 mc.world.addParticle(
                     (IParticleData) particleType,
                     startX, startY, startZ,
                     dirX * 0.5, dirY * 0.5, dirZ * 0.5
+                );
+            }
+        }
+    }
+    
+    // ========== НОВЫЙ ЭФФЕКТ: СХЛОПЫВАНИЕ ПОРТАЛА К ЦЕНТРУ ==========
+    private static void spawnPortalCollapse(Minecraft mc, BlockPos pos) {
+        if (mc.world == null) return;
+        
+        // Центр блока
+        double centerX = pos.getX() + 0.5;
+        double centerY = pos.getY() + 0.5;
+        double centerZ = pos.getZ() + 0.5;
+        
+        // 8 углов блока
+        double[][] corners = {
+            {pos.getX(), pos.getY(), pos.getZ()},
+            {pos.getX() + 1, pos.getY(), pos.getZ()},
+            {pos.getX(), pos.getY() + 1, pos.getZ()},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},
+            {pos.getX(), pos.getY(), pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},
+            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},
+            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}
+        };
+        
+        // Спавним частицы из каждого угла, летящие К центру
+        for (double[] corner : corners) {
+            // Направление ОТ угла К центру
+            double dirX = centerX - corner[0];
+            double dirY = centerY - corner[1];
+            double dirZ = centerZ - corner[2];
+            
+            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            if (length > 0) {
+                dirX = (dirX / length) * 0.15;
+                dirY = (dirY / length) * 0.15;
+                dirZ = (dirZ / length) * 0.15;
+            }
+            
+            // Создаем 4 частицы на угол для эффекта схлопывания
+            for (int i = 0; i < 4; i++) {
+                mc.world.addParticle(
+                    ParticleTypes.PORTAL,
+                    corner[0], corner[1], corner[2],
+                    dirX, dirY, dirZ
                 );
             }
         }
