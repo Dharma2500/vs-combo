@@ -10,6 +10,8 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 import org.lwjgl.glfw.GLFW;
 
+// FIX: Добавлены импорты
+import com.vs.vscombo.VSBaseMod;
 import com.vs.vscombo.feature.tabs.MacrosTab;
 import com.vs.vscombo.feature.tabs.BlocksTab;
 import com.vs.vscombo.feature.tabs.AntiChatTab;
@@ -99,7 +101,7 @@ public class VSMainWindow extends Screen {
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 5, SIDEBAR_WIDTH - 10, 20,
             new StringTextComponent("Blocks"), btn -> switchTab("blocks")));
         
-        // FIX: Кнопка AntiChat под кнопкой Blocks
+        // Кнопка AntiChat под кнопкой Blocks
         this.addButton(new Button(panelX + 5, buttonY + buttonSpacing * 6, SIDEBAR_WIDTH - 10, 20,
             new StringTextComponent("AntiChat"), btn -> switchTab("antichat")));
         
@@ -159,21 +161,15 @@ public class VSMainWindow extends Screen {
         // Для вкладки AntiChat - кнопки управляют AntiChat
         if (isAntiChatTabActive) {
             clearButton = new Button(panelX + 5, bottomY, 60, 20,
-                new StringTextComponent("Clear"), btn -> {
-                    // Очистить настройки AntiChat
-                });
+                new StringTextComponent("Clear"), btn -> {});
             this.addButton(clearButton);
             
             stopButton = new Button(panelX + panelW/2 - 30, bottomY, 60, 20,
-                new StringTextComponent("Stop"), btn -> {
-                    // Остановить AntiChat
-                });
+                new StringTextComponent("Stop"), btn -> {});
             this.addButton(stopButton);
             
             executeButton = new Button(panelX + panelW - 85, bottomY, 75, 20,
-                new StringTextComponent("Execute"), btn -> {
-                    // Применить настройки AntiChat
-                });
+                new StringTextComponent("Execute"), btn -> {});
             this.addButton(executeButton);
             
             return;
