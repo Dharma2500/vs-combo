@@ -136,36 +136,52 @@ public class BlockHighlightHandler {
         // Получаем тип блока по цвету
         BlockState blockState = getBlockStateForColor(blockEffectColor);
         
-        double centerX = pos.getX() + 0.5;
-        double centerY = pos.getY() + 0.5;
-        double centerZ = pos.getZ() + 0.5;
-        
+        // 8 углов блока
         double[][] corners = {
-            {pos.getX(), pos.getY(), pos.getZ()},
-            {pos.getX() + 1, pos.getY(), pos.getZ()},
-            {pos.getX(), pos.getY() + 1, pos.getZ()},
-            {pos.getX() + 1, pos.getY() + 1, pos.getZ()},
-            {pos.getX(), pos.getY(), pos.getZ() + 1},
-            {pos.getX() + 1, pos.getY(), pos.getZ() + 1},
-            {pos.getX(), pos.getY() + 1, pos.getZ() + 1},
-            {pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1}
+            {0, 0, 0},  // 0
+            {1, 0, 0},  // 1
+            {0, 1, 0},  // 2
+            {1, 1, 0},  // 3
+            {0, 0, 1},  // 4
+            {1, 0, 1},  // 5
+            {0, 1, 1},  // 6
+            {1, 1, 1}   // 7
         };
         
-        for (double[] corner : corners) {
-            double dirX = corner[0] - centerX;
-            double dirY = corner[1] - centerY;
-            double dirZ = corner[2] - centerZ;
+        // Для каждого угла создаем частицу, летящую к другому углу
+        for (int i = 0; i < corners.length; i++) {
+            // Случайный целевой угол (не равный текущему)
+            int targetIndex;
+            do {
+                targetIndex = mc.world.rand.nextInt(8);
+            } while (targetIndex == i);
             
+            // Позиция старта (абсолютные координаты)
+            double startX = pos.getX() + corners[i][0];
+            double startY = pos.getY() + corners[i][1];
+            double startZ = pos.getZ() + corners[i][2];
+            
+            // Позиция цели (абсолютные координаты)
+            double targetX = pos.getX() + corners[targetIndex][0];
+            double targetY = pos.getY() + corners[targetIndex][1];
+            double targetZ = pos.getZ() + corners[targetIndex][2];
+            
+            // Направление от текущего угла к целевому
+            double dirX = targetX - startX;
+            double dirY = targetY - startY;
+            double dirZ = targetZ - startZ;
+            
+            // Нормализуем и задаем скорость
             double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
             if (length > 0) {
                 dirX = (dirX / length) * 0.15;
-                dirY = (dirY / length) * 0.15 + 0.1;
+                dirY = (dirY / length) * 0.15;
                 dirZ = (dirZ / length) * 0.15;
             }
             
-            // FIX: Используем BlockParticleData для Forge 1.16.5
+            // Создаем частицу блока (очень маленькую)
             BlockParticleData particleData = new BlockParticleData(ParticleTypes.BLOCK, blockState);
-            mc.world.addParticle(particleData, corner[0], corner[1], corner[2], dirX, dirY, dirZ);
+            mc.world.addParticle(particleData, startX, startY, startZ, dirX, dirY, dirZ);
         }
     }
     
