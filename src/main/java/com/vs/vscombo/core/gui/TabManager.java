@@ -19,15 +19,15 @@ public class TabManager {
     }
 
     private void initializeTabs() {
-        // Macros вкладки
+        // Macros вкладки - конструктор без параметров
         for (int i = 1; i <= 5; i++) {
-            tabs.put("macros" + i, new MacrosTab(i));
+            tabs.put("macros" + i, new MacrosTab());
         }
         
         // Вкладка Blocks
         tabs.put("blocks", new BlocksTab());
         
-        // FIX: Вкладка AntiChat
+        // Вкладка AntiChat
         tabs.put("antichat", new AntiChatTab());
         
         // Активная вкладка по умолчанию
