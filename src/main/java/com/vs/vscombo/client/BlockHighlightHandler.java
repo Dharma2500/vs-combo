@@ -23,16 +23,15 @@ public class BlockHighlightHandler {
     // ========== ВТОРОЙ ЭФФЕКТ - КАПАЮЩИЕ ЧАСТИЦЫ ==========
     private static boolean blockEffectEnabled = false;
     private static int blockEffectColor = 0xFF800080;
-    private static long lastBlockTime = 0;
-    private static long effectCycleStart = 0;
-    private static boolean effectCycleActive = false;
+    private static long lastBlockCycleTime = 0;
+    private static int ticksInCurrentCycle = 0;
     
     // ========== КОНСТАНТЫ ==========
     private static final int COLOR_PURPLE = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
-    private static final int EFFECT_DURATION_TICKS = 4;   // 0.2 секунды (20 TPS)
-    private static final int CYCLE_PAUSE_TICKS = 16;      // 0.8 секунды пауза
+    private static final int EFFECT_ACTIVE_TICKS = 1;     // 0.05 секунды (1 тик при 20 TPS)
+    private static final int CYCLE_TOTAL_TICKS = 4;       // 0.2 секунды полный цикл (4 тика)
     
     // ========== ПЕРВЫЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setParticleEffectEnabled(boolean enabled) {
@@ -51,13 +50,14 @@ public class BlockHighlightHandler {
     // ========== ВТОРОЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
         blockEffectEnabled = enabled;
-        effectCycleActive = false;
+        ticksInCurrentCycle = 0;
+        lastBlockCycleTime = 0;
         VSBaseMod.LOGGER.info("Block effect {}", enabled ? "enabled" : "disabled");
     }
     
     public static void setBlockEffectColor(int color) {
         blockEffectColor = color;
-        effectCycleActive = false;
+        ticksInCurrentCycle = 0;
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
@@ -68,7 +68,7 @@ public class BlockHighlightHandler {
     public static void clearAllEffects() {
         particleEffectEnabled = false;
         blockEffectEnabled = false;
-        effectCycleActive = false;
+        ticksInCurrentCycle = 0;
         VSBaseMod.LOGGER.info("All effects cleared");
     }
     
@@ -86,7 +86,6 @@ public class BlockHighlightHandler {
         
         BlockPos pos = ((BlockRayTraceResult) mc.objectMouseOver).getPos();
         long currentTime = System.currentTimeMillis();
-        int currentTick = (int)(currentTime / 50); // Приблизительный номер тика
         
         // Первый эффект - цветные частицы (каждые 100мс)
         if (particleEffectEnabled && currentTime - lastParticleTime > 100) {
@@ -94,9 +93,9 @@ public class BlockHighlightHandler {
             lastParticleTime = currentTime;
         }
         
-        // Второй эффект - циклический (0.2 сек активен, 0.8 сек пауза)
+        // Второй эффект - быстрый цикл (0.05с активно, 0.15с пауза)
         if (blockEffectEnabled) {
-            spawnCyclicParticles(mc, pos, currentTick);
+            spawnFastCyclicParticles(mc, pos);
         }
     }
     
@@ -139,30 +138,28 @@ public class BlockHighlightHandler {
         }
     }
     
-    // ========== ВТОРОЙ ЭФФЕКТ - ЦИКЛИЧЕСКИЕ ЧАСТИЦЫ ==========
-    private static void spawnCyclicParticles(Minecraft mc, BlockPos pos, int currentTick) {
+    // ========== ВТОРОЙ ЭФФЕКТ - БЫСТРЫЕ ЦИКЛИЧЕСКИЕ ЧАСТИЦЫ ==========
+    private static void spawnFastCyclicParticles(Minecraft mc, BlockPos pos) {
         if (mc.world == null) return;
         
-        // Управление циклом: 0.2 сек активно, 0.8 сек пауза
-        if (!effectCycleActive) {
-            // Начинаем новый цикл
-            effectCycleStart = currentTick;
-            effectCycleActive = true;
+        long currentTime = System.currentTimeMillis();
+        long elapsedMs = currentTime - lastBlockCycleTime;
+        
+        // Новый цикл каждые 0.2 секунды (200мс)
+        if (elapsedMs >= 200) {
+            lastBlockCycleTime = currentTime;
+            ticksInCurrentCycle = 0;
         }
         
-        int elapsedTicks = currentTick - (int)effectCycleStart;
-        
-        // Если прошло больше 0.2 секунды (4 тика) + пауза (16 тиков) - перезапускаем
-        if (elapsedTicks > EFFECT_DURATION_TICKS + CYCLE_PAUSE_TICKS) {
-            effectCycleActive = false;
-            return;
+        // Спавним частицы только в первый тик цикла (первые 0.05с = 50мс)
+        if (elapsedMs < 50 && ticksInCurrentCycle == 0) {
+            spawnBlockParticles(mc, pos);
+            ticksInCurrentCycle = 1;
         }
-        
-        // Спавним частицы только в течение первых 0.2 секунды цикла
-        if (elapsedTicks > EFFECT_DURATION_TICKS) {
-            return;
-        }
-        
+    }
+    
+    // ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
+    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
         // 8 углов блока
         double[][] corners = {
             {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
