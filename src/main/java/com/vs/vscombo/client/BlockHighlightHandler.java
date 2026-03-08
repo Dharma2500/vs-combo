@@ -30,8 +30,6 @@ public class BlockHighlightHandler {
     private static final int COLOR_PURPLE = 0xFF800080;
     private static final int COLOR_LIME = 0xFF00FF00;
     private static final int COLOR_RED = 0xFFFF0000;
-    private static final int EFFECT_ACTIVE_TICKS = 1;     // 0.05 секунды (1 тик при 20 TPS)
-    private static final int CYCLE_TOTAL_TICKS = 4;       // 0.2 секунды полный цикл (4 тика)
     
     // ========== ПЕРВЫЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setParticleEffectEnabled(boolean enabled) {
@@ -44,8 +42,13 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Particle effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isParticleEffectEnabled() { return particleEffectEnabled; }
-    public static int getParticleEffectColor() { return particleEffectColor; }
+    public static boolean isParticleEffectEnabled() { 
+        return particleEffectEnabled; 
+    }
+    
+    public static int getParticleEffectColor() { 
+        return particleEffectColor; 
+    }
     
     // ========== ВТОРОЙ ЭФФЕКТ - МЕТОДЫ ==========
     public static void setBlockEffectEnabled(boolean enabled) {
@@ -61,8 +64,13 @@ public class BlockHighlightHandler {
         VSBaseMod.LOGGER.info("Block effect color set to 0x{}", Integer.toHexString(color));
     }
     
-    public static boolean isBlockEffectEnabled() { return blockEffectEnabled; }
-    public static int getBlockEffectColor() { return blockEffectColor; }
+    public static boolean isBlockEffectEnabled() { 
+        return blockEffectEnabled; 
+    }
+    
+    public static int getBlockEffectColor() { 
+        return blockEffectColor; 
+    }
     
     // ========== ОБЩАЯ ФУНКЦИЯ CLEAR ==========
     public static void clearAllEffects() {
@@ -80,6 +88,7 @@ public class BlockHighlightHandler {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.world == null) return;
         
+        // FIX: MCP mappings - objectMouseOver
         if (mc.objectMouseOver == null || mc.objectMouseOver.getType() != BlockRayTraceResult.Type.BLOCK) {
             return;
         }
@@ -158,69 +167,59 @@ public class BlockHighlightHandler {
         }
     }
     
-// ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
-private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
-    // 8 углов блока
-    double[][] corners = {
-        {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-        {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
-    };
-    
-    // Соседние углы (только по осям)
-    int[][] neighbors = {
-        {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
-        {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
-    };
-    
-    // Выбираем тип частиц
-    BasicParticleType particleType;
-    boolean useColor = false;
-    
-    // FIX: Заменили FIREWORK на PORTAL для пурпурного цвета
-    if (blockEffectColor == COLOR_RED) {
-        particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
-        useColor = false;
-    } else if (blockEffectColor == COLOR_PURPLE) {
-        particleType = ParticleTypes.PORTAL;           // Пурпур → портал
-        useColor = false;
-    } else {
-        particleType = ParticleTypes.ENTITY_EFFECT;    // Лайм → цветные
-        useColor = true;
-    }
-    
-    // Спавним частицы из каждого угла
-    for (int i = 0; i < corners.length; i++) {
-        int[] neighborIndices = neighbors[i];
-        int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
+    // ========== СПАВН ЧАСТИЦ ВТОРОГО ЭФФЕКТА ==========
+    private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
+        // 8 углов блока
+        double[][] corners = {
+            {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+            {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}
+        };
         
-        double startX = pos.getX() + corners[i][0];
-        double startY = pos.getY() + corners[i][1];
-        double startZ = pos.getZ() + corners[i][2];
+        // Соседние углы (только по осям)
+        int[][] neighbors = {
+            {1, 2, 4}, {0, 3, 5}, {0, 3, 6}, {1, 2, 7},
+            {0, 5, 6}, {1, 4, 7}, {2, 4, 7}, {3, 5, 6}
+        };
         
-        double targetX = pos.getX() + corners[targetIndex][0];
-        double targetY = pos.getY() + corners[targetIndex][1];
-        double targetZ = pos.getZ() + corners[targetIndex][2];
+        // Выбираем тип частиц в зависимости от цвета
+        BasicParticleType particleType;
         
-        double dirX = targetX - startX;
-        double dirY = targetY - startY;
-        double dirZ = targetZ - startZ;
-        
-        double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-        if (length > 0) {
-            dirX = (dirX / length) * 0.12;
-            dirY = (dirY / length) * 0.12;
-            dirZ = (dirZ / length) * 0.12;
+        // FIX: PORTAL для пурпурного, DRIPPING_LAVA для красного, SMOKE для лайма
+        if (blockEffectColor == COLOR_RED) {
+            particleType = ParticleTypes.DRIPPING_LAVA;    // Красный → лава
+        } else if (blockEffectColor == COLOR_PURPLE) {
+            particleType = ParticleTypes.PORTAL;           // Пурпур → портал
+        } else {
+            particleType = ParticleTypes.SMOKE;            // Лайм → дым
         }
         
-        // Создаем 3 частицы на угол
-        for (int j = 0; j < 3; j++) {
-            if (useColor) {
-                mc.world.addParticle(
-                    (IParticleData) particleType,
-                    startX, startY, startZ,
-                    getRed(blockEffectColor), getGreen(blockEffectColor), getBlue(blockEffectColor)
-                );
-            } else {
+        // Спавним частицы из каждого угла
+        for (int i = 0; i < corners.length; i++) {
+            int[] neighborIndices = neighbors[i];
+            int targetIndex = neighborIndices[mc.world.rand.nextInt(neighborIndices.length)];
+            
+            double startX = pos.getX() + corners[i][0];
+            double startY = pos.getY() + corners[i][1];
+            double startZ = pos.getZ() + corners[i][2];
+            
+            double targetX = pos.getX() + corners[targetIndex][0];
+            double targetY = pos.getY() + corners[targetIndex][1];
+            double targetZ = pos.getZ() + corners[targetIndex][2];
+            
+            double dirX = targetX - startX;
+            double dirY = targetY - startY;
+            double dirZ = targetZ - startZ;
+            
+            double length = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+            if (length > 0) {
+                dirX = (dirX / length) * 0.12;
+                dirY = (dirY / length) * 0.12;
+                dirZ = (dirZ / length) * 0.12;
+            }
+            
+            // Создаем 3 частицы на угол
+            for (int j = 0; j < 3; j++) {
+                // FIX: Правильное приведение типа для всех частиц
                 mc.world.addParticle(
                     (IParticleData) particleType,
                     startX, startY, startZ,
@@ -229,7 +228,6 @@ private static void spawnBlockParticles(Minecraft mc, BlockPos pos) {
             }
         }
     }
-}
     
     // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     private static float getRed(int color) {
